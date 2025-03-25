@@ -1,13 +1,36 @@
 from flask import Flask, request, render_template_string
 from twilio.twiml.messaging_response import MessagingResponse
 from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
 
 # ---------------------------
-# Almacén temporal de votos (diccionario en memoria)
+# Configuración de la base de datos PostgreSQL
 # ---------------------------
-votos_registrados = {}
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# ---------------------------
+# Modelo de tabla: votos
+# ---------------------------
+class Voto(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    numero = db.Column(db.String(50), unique=True, nullable=False)
+    candidato = db.Column(db.String(100), nullable=False)
+    pais = db.Column(db.String(100), nullable=False)
+    ciudad = db.Column(db.String(100), nullable=False)
+    ip = db.Column(db.String(50), nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ---------------------------
+# Crear tabla si no existe (solo una vez)
+# ---------------------------
+@app.before_first_request
+def crear_tabla():
+    db.create_all()
 
 # ---------------------------
 # Ruta: Página de votación
@@ -15,14 +38,13 @@ votos_registrados = {}
 @app.route('/votar')
 def votar():
     numero = request.args.get('numero')
-    
     if not numero:
         return "Acceso no válido"
 
-    if numero in votos_registrados:
+    voto_existente = Voto.query.filter_by(numero=numero).first()
+    if voto_existente:
         return "Este número ya ha votado. Gracias por participar."
 
-    # HTML del formulario con Bootstrap y selección dinámica de país y ciudad
     html = '''
     <!DOCTYPE html>
     <html lang="es">
@@ -124,7 +146,6 @@ def votar():
     </body>
     </html>
     '''
-
     return render_template_string(html, numero=numero)
 
 # ---------------------------
@@ -137,19 +158,20 @@ def enviar_voto():
     pais = request.form.get('pais')
     ciudad = request.form.get('ciudad')
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    if numero in votos_registrados:
+    if Voto.query.filter_by(numero=numero).first():
         return "Ya registramos tu voto."
 
-    # Guardar todos los datos del votante
-    votos_registrados[numero] = {
-        "candidato": candidato,
-        "pais": pais,
-        "ciudad": ciudad,
-        "ip": ip,
-        "hora": hora
-    }
+    nuevo_voto = Voto(
+        numero=numero,
+        candidato=candidato,
+        pais=pais,
+        ciudad=ciudad,
+        ip=ip
+    )
+
+    db.session.add(nuevo_voto)
+    db.session.commit()
 
     return f"Gracias por tu voto. Has elegido: {candidato}.<br>Ubicación: {ciudad}, {pais}"
 
@@ -167,7 +189,7 @@ def whatsapp_reply():
     return str(response)
 
 # ---------------------------
-# Ejecutar la app localmente
+# Ejecutar localmente
 # ---------------------------
 if __name__ == '__main__':
     app.run(debug=True)
