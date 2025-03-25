@@ -3,3 +3,5 @@ twilio
 gunicorn
 SQLAlchemy
 psycopg2-binary
+flask_sqlalchemy
+
