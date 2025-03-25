@@ -46,7 +46,8 @@ def enviar_voto():
 def whatsapp_reply():
     sender = request.values.get('From', '')
 
-    link_votacion = f"https://https://votacion-whatsapp.onrender.com/votar?numero={sender}"
+    link_votacion = f"https://votacion-whatsapp.onrender.com/votar?numero={sender}"
+
 
     response = MessagingResponse()
     msg = response.message()
