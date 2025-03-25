@@ -30,7 +30,11 @@ def votar():
         <meta charset="UTF-8">
         <title>Elecciones Ciudadanas 2025</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
         <script>
+            // Cargar países en el select
             async function cargarPaises() {
                 const res = await fetch("https://countriesnow.space/api/v0.1/countries");
                 const data = await res.json();
@@ -41,21 +45,29 @@ def votar():
                     const option = document.createElement("option");
                     option.value = p.country;
                     option.textContent = p.country;
+                    if (p.country === "Bolivia") {
+                        option.selected = true;
+                    }
                     selectPais.appendChild(option);
                 });
+
+                // Cargar ciudades de Bolivia al inicio
+                cargarCiudades("Bolivia");
 
                 selectPais.addEventListener("change", () => {
                     const paisSeleccionado = selectPais.value;
                     cargarCiudades(paisSeleccionado);
                 });
+
+                // Activar búsqueda con Select2
+                $('#pais').select2({ placeholder: "Seleccione un país" });
             }
 
+            // Cargar ciudades según el país
             async function cargarCiudades(pais) {
                 const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ country: pais })
                 });
 
@@ -70,10 +82,16 @@ def votar():
                     option.textContent = c;
                     selectCiudad.appendChild(option);
                 });
+
+                // Activar búsqueda con Select2
+                $('#ciudad').select2({ placeholder: "Seleccione una ciudad" });
             }
 
             window.onload = cargarPaises;
         </script>
+
+        <!-- jQuery (requerido por Select2) -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
     <body class="container mt-5">
         <h2 class="mb-4">Elecciones Ciudadanas 2025</h2>
@@ -98,14 +116,14 @@ def votar():
 
             <div class="mb-3">
                 <label for="pais" class="form-label">País:</label>
-                <select class="form-select" id="pais" name="pais" required>
+                <select class="form-select" id="pais" name="pais" required style="width: 100%;">
                     <option value="">Seleccione un país</option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label for="ciudad" class="form-label">Ciudad:</label>
-                <select class="form-select" id="ciudad" name="ciudad" required>
+                <select class="form-select" id="ciudad" name="ciudad" required style="width: 100%;">
                     <option value="">Seleccione una ciudad</option>
                 </select>
             </div>
@@ -115,6 +133,7 @@ def votar():
     </body>
     </html>
     '''
+
     return render_template_string(html, numero=numero)
 
 # ---------------------------
