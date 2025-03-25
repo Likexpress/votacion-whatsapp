@@ -30,7 +30,59 @@ def votar():
         <meta charset="UTF-8">
         <title>Elecciones Ciudadanas 2025</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+        <script>
+            async function cargarPaises() {
+                const res = await fetch("https://countriesnow.space/api/v0.1/countries");
+                const data = await res.json();
+                const paises = data.data;
+
+                const selectPais = $('#pais');
+                paises.forEach(p => {
+                    const option = new Option(p.country, p.country, false, false);
+                    selectPais.append(option);
+                });
+
+                selectPais.trigger('change');
+
+                selectPais.on('change', function () {
+                    const paisSeleccionado = $(this).val();
+                    cargarCiudades(paisSeleccionado);
+                });
+            }
+
+            async function cargarCiudades(pais) {
+                const selectCiudad = $('#ciudad');
+                selectCiudad.empty().append(new Option("Cargando...", "", false, false)).trigger('change');
+
+                const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ country: pais })
+                });
+
+                const data = await res.json();
+                selectCiudad.empty().append(new Option("Seleccione una ciudad", "", false, false));
+
+                data.data.forEach(c => {
+                    const option = new Option(c, c, false, false);
+                    selectCiudad.append(option);
+                });
+
+                selectCiudad.trigger('change');
+            }
+
+            $(document).ready(function () {
+                $('#pais').select2({ placeholder: "Seleccione un país", width: '100%' });
+                $('#ciudad').select2({ placeholder: "Seleccione una ciudad", width: '100%' });
+
+                cargarPaises();
+            });
+        </script>
     </head>
     <body class="container mt-5">
         <h2 class="mb-4">Elecciones Ciudadanas 2025</h2>
@@ -55,81 +107,20 @@ def votar():
 
             <div class="mb-3">
                 <label for="pais" class="form-label">País:</label>
-                <select class="form-select" id="pais" name="pais" required>
-                    <option value="">Seleccione un país</option>
+                <select id="pais" name="pais" class="form-select" required>
+                    <option></option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label for="ciudad" class="form-label">Ciudad:</label>
-                <select class="form-select" id="ciudad" name="ciudad" required>
-                    <option value="">Seleccione una ciudad</option>
+                <select id="ciudad" name="ciudad" class="form-select" required>
+                    <option></option>
                 </select>
             </div>
 
             <button type="submit" class="btn btn-primary">Votar</button>
         </form>
-
-        <!-- Scripts -->
-        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-        <script>
-            async function cargarPaises() {
-                const res = await fetch("https://countriesnow.space/api/v0.1/countries");
-                const data = await res.json();
-                const paises = data.data;
-
-                const selectPais = document.getElementById("pais");
-                paises.forEach(p => {
-                    const option = document.createElement("option");
-                    option.value = p.country;
-                    option.textContent = p.country;
-                    if (p.country === "Bolivia") {
-                        option.selected = true; // Selecciona Bolivia por defecto
-                    }
-                    selectPais.appendChild(option);
-                });
-
-                // Cargar ciudades iniciales de Bolivia
-                cargarCiudades("Bolivia");
-
-                selectPais.addEventListener("change", () => {
-                    const paisSeleccionado = selectPais.value;
-                    cargarCiudades(paisSeleccionado);
-                });
-
-                new TomSelect("#pais", {
-                    create: false,
-                    sortField: { field: "text", direction: "asc" }
-                });
-            }
-
-            async function cargarCiudades(pais) {
-                const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ country: pais })
-                });
-
-                const data = await res.json();
-                const ciudades = data.data;
-                const selectCiudad = document.getElementById("ciudad");
-
-                selectCiudad.innerHTML = '<option value="">Seleccione una ciudad</option>';
-                ciudades.forEach(c => {
-                    const option = document.createElement("option");
-                    option.value = c;
-                    option.textContent = c;
-                    selectCiudad.appendChild(option);
-                });
-
-                new TomSelect("#ciudad", {
-                    create: false,
-                    sortField: { field: "text", direction: "asc" }
-                });
-            }
-
-            window.onload = cargarPaises;
-        </script>
     </body>
     </html>
     '''
