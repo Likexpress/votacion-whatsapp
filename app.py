@@ -181,6 +181,16 @@ def eliminar_tabla_voto():
     except Exception as e:
         return f"Error al eliminar la tabla: {str(e)}"
 
+@app.route('/crear_tabla_voto')
+def crear_tabla_voto():
+    try:
+        with app.app_context():
+            db.create_all()
+        return "La tabla 'voto' ha sido creada exitosamente."
+    except Exception as e:
+        return f"Error al crear la tabla: {str(e)}"
+
+
 # ---------------------------
 # Ejecutar la app localmente
 # ---------------------------
