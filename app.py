@@ -10,9 +10,9 @@ import requests
 # Configuración
 # ---------------------------
 app = Flask(__name__)
-SECRET_KEY = os.environ.get("SECRET_KEY", "uFo2UB4b1rdgKaYnPJ6ZUrUKjSxX0r60")
+SECRET_KEY = os.environ.get("SECRET_KEY", "Likexpress-000")
 serializer = URLSafeTimedSerializer(SECRET_KEY)
-IPQUALITY_API_KEY = os.environ.get("IPQUALITY_API_KEY")
+IPQUALITY_API_KEY = "uFo2UB4b1rdgKaYnPJ6ZUrUKjSxX0r60"  # tu API KEY real
 RATE_LIMIT_WINDOW = timedelta(seconds=60)
 
 # ---------------------------
@@ -53,15 +53,19 @@ with app.app_context():
 # ---------------------------
 def ip_es_vpn(ip):
     if not IPQUALITY_API_KEY or not ip:
+        print("IPQualityScore: API Key o IP faltante.")
         return False
     try:
         url = f"https://ipqualityscore.com/api/json/ip/{IPQUALITY_API_KEY}/{ip}"
+        print(f"Consultando IPQualityScore para IP: {ip}")
         res = requests.get(url)
         data = res.json()
+        print("Respuesta IPQualityScore:", data)
         return data.get("proxy") or data.get("vpn") or data.get("tor")
     except Exception as e:
-        print("Error verificando IP:", e)
+        print("Error al verificar IP con IPQualityScore:", e)
         return False
+
 
 # ---------------------------
 # Verificar si una IP accedió recientemente (rate limit)
