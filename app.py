@@ -171,6 +171,17 @@ def borrar_voto():
         return "No se encontró ningún voto con ese número."
 
 # ---------------------------
+# Ruta temporal para eliminar tabla voto (solo para desarrollo)
+# ---------------------------
+@app.route('/eliminar_tabla_voto')
+def eliminar_tabla_voto():
+    try:
+        Voto.__table__.drop(db.engine)
+        return "La tabla 'voto' ha sido eliminada correctamente."
+    except Exception as e:
+        return f"Error al eliminar la tabla: {str(e)}"
+
+# ---------------------------
 # Ejecutar la app localmente
 # ---------------------------
 if __name__ == '__main__':
