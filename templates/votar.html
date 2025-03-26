@@ -55,6 +55,50 @@
         <input type="hidden" name="numero" value="{{ numero }}">
 
         <div class="mb-3">
+            <label for="ci" class="form-label">Número de Carnet de Identidad:</label>
+            <input type="number" id="ci" name="ci" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Fecha de nacimiento:</label>
+            <div class="row">
+                <div class="col">
+                    <select class="form-select" name="dia_nacimiento" required>
+                        <option value="">Día</option>
+                        {% for dia in range(1, 32) %}
+                        <option value="{{ dia }}">{{ dia }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col">
+                    <select class="form-select" name="mes_nacimiento" required>
+                        <option value="">Mes</option>
+                        <option value="1">Enero</option>
+                        <option value="2">Febrero</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Mayo</option>
+                        <option value="6">Junio</option>
+                        <option value="7">Julio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12">Diciembre</option>
+                    </select>
+                </div>
+                <div class="col">
+                    <select class="form-select" name="anio_nacimiento" required>
+                        <option value="">Año</option>
+                        {% for anio in range(1940, 2024) %}
+                        <option value="{{ anio }}">{{ anio }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
             <label for="pais" class="form-label">País:</label>
             <select id="pais" name="pais" class="form-select" required>
                 <option></option>
@@ -69,50 +113,17 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Fecha de nacimiento:</label>
-            <div class="row">
-                <div class="col-md-4">
-                    <select name="dia_nacimiento" class="form-select" required>
-                        <option value="">Día</option>
-                        {% for d in range(1, 32) %}
-                            <option value="{{ d }}">{{ d }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <select name="mes_nacimiento" class="form-select" required>
-                        <option value="">Mes</option>
-                        {% for m in range(1, 13) %}
-                            <option value="{{ m }}">{{ m }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <select name="anio_nacimiento" class="form-select" required>
-                        <option value="">Año</option>
-                        {% for a in range(1935, 2025) %}
-                            <option value="{{ a }}">{{ a }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <label class="form-label">Elige tu candidato:</label>
+            {% for candidato in [
+                'Amparo Ballivian', 'Chi Hyun Chung', 'Edgar Uriona',
+                'Edmar Lara', 'Jaime Dunn', 'Jorge Quiroga Ramirez',
+                'José Carlos Sánchez', 'Manfred Reyes Villa',
+                'Rodrigo Paz Pereira', 'Samuel Doria Medina'] %}
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="candidato" value="{{ candidato }}" required>
+                <label class="form-check-label">{{ candidato }}</label>
             </div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">¿Por quién desea votar?</label>
-            <select name="candidato" class="form-select" required>
-                <option value="">Seleccione un candidato</option>
-                <option>Amparo Ballivian</option>
-                <option>Chi Hyun Chung</option>
-                <option>Edgar Uriona</option>
-                <option>Edmar Lara</option>
-                <option>Jaime Dunn</option>
-                <option>Jorge Quiroga Ramirez</option>
-                <option>José Carlos Sánchez</option>
-                <option>Manfred Reyes Villa</option>
-                <option>Rodrigo Paz Pereira</option>
-                <option>Samuel Doria Medina</option>
-            </select>
+            {% endfor %}
         </div>
 
         <button type="submit" class="btn btn-primary">Votar</button>

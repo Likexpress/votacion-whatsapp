@@ -27,6 +27,7 @@ db = SQLAlchemy(app)
 class Voto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.String(50), unique=True, nullable=False)
+    ci = db.Column(db.BigInteger, nullable=False)
     candidato = db.Column(db.String(100), nullable=False)
     pais = db.Column(db.String(100), nullable=False)
     ciudad = db.Column(db.String(100), nullable=False)
@@ -98,6 +99,7 @@ def votar():
 @app.route('/enviar_voto', methods=['POST'])
 def enviar_voto():
     numero = request.form.get('numero')
+    ci = request.form.get('ci')
     candidato = request.form.get('candidato')
     pais = request.form.get('pais')
     ciudad = request.form.get('ciudad')
@@ -106,7 +108,7 @@ def enviar_voto():
     anio = request.form.get('anio_nacimiento')
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 
-    if not all([numero, candidato, pais, ciudad, dia, mes, anio]):
+    if not all([numero, ci, candidato, pais, ciudad, dia, mes, anio]):
         return "Faltan datos obligatorios."
 
     if Voto.query.filter_by(numero=numero).first():
@@ -121,6 +123,7 @@ def enviar_voto():
 
     nuevo_voto = Voto(
         numero=numero,
+        ci=int(ci),
         candidato=candidato,
         pais=pais,
         ciudad=ciudad,
@@ -166,20 +169,6 @@ def borrar_voto():
         return f"Voto del número {numero} eliminado correctamente."
     else:
         return "No se encontró ningún voto con ese número."
-
-
-# ---------------------------
-# Ruta temporal para eliminar tabla voto (solo para desarrollo)
-# ---------------------------
-@app.route('/eliminar_tabla_voto')
-def eliminar_tabla_voto():
-    try:
-        Voto.__table__.drop(db.engine)
-        return "La tabla 'voto' ha sido eliminada correctamente."
-    except Exception as e:
-        return f"Error al eliminar la tabla: {str(e)}"
-
-
 
 # ---------------------------
 # Ejecutar la app localmente
