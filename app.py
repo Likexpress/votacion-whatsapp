@@ -30,6 +30,9 @@ class Voto(db.Model):
     candidato = db.Column(db.String(100), nullable=False)
     pais = db.Column(db.String(100), nullable=False)
     ciudad = db.Column(db.String(100), nullable=False)
+    dia_nacimiento = db.Column(db.Integer, nullable=False)
+    mes_nacimiento = db.Column(db.Integer, nullable=False)
+    anio_nacimiento = db.Column(db.Integer, nullable=False)
     ip = db.Column(db.String(50), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -79,12 +82,10 @@ def votar():
         return "Este número ya ha votado. Gracias por participar."
 
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    
-    # Verificación contra VPN/Proxy
+
     if ip_es_vpn(ip):
         return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
-    # Límite de 10 votos por IP
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
     if votos_misma_ip >= 10:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
@@ -100,7 +101,13 @@ def enviar_voto():
     candidato = request.form.get('candidato')
     pais = request.form.get('pais')
     ciudad = request.form.get('ciudad')
+    dia = request.form.get('dia_nacimiento')
+    mes = request.form.get('mes_nacimiento')
+    anio = request.form.get('anio_nacimiento')
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+
+    if not all([numero, candidato, pais, ciudad, dia, mes, anio]):
+        return "Faltan datos obligatorios."
 
     if Voto.query.filter_by(numero=numero).first():
         return "Ya registramos tu voto."
@@ -117,6 +124,9 @@ def enviar_voto():
         candidato=candidato,
         pais=pais,
         ciudad=ciudad,
+        dia_nacimiento=int(dia),
+        mes_nacimiento=int(mes),
+        anio_nacimiento=int(anio),
         ip=ip
     )
     db.session.add(nuevo_voto)
@@ -147,7 +157,7 @@ def whatsapp_reply():
 def borrar_voto():
     numero = request.args.get('numero')
     if not numero:
-        return "Falta el número. Usa /borrar_voto?numero=whatsapp:+591XXXXXXXX"
+        return "Falta el número. Usa /borrar_voto?numero=whatsapp:+59167692624"
 
     voto = Voto.query.filter_by(numero=numero).first()
     if voto:
