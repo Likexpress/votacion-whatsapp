@@ -1,16 +1,19 @@
 from flask import Flask, request, render_template, redirect
 from twilio.twiml.messaging_response import MessagingResponse
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
-from itsdangerous import URLSafeSerializer, BadSignature
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 import os
+import requests
 
 # ---------------------------
-# Inicialización de la aplicación Flask
+# Configuración
 # ---------------------------
 app = Flask(__name__)
 SECRET_KEY = os.environ.get("SECRET_KEY", "clave-secreta-segura")
-serializer = URLSafeSerializer(SECRET_KEY)
+serializer = URLSafeTimedSerializer(SECRET_KEY)
+IPQUALITY_API_KEY = os.environ.get("IPQUALITY_API_KEY")
+RATE_LIMIT_WINDOW = timedelta(seconds=60)  # Límite de 1 minuto entre accesos por IP
 
 # ---------------------------
 # Configuración de la base de datos PostgreSQL
@@ -31,11 +34,39 @@ class Voto(db.Model):
     ip = db.Column(db.String(50), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
-# ---------------------------
-# Crear tabla si no existe (compatible con Flask 3.x)
-# ---------------------------
+class IPLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ip = db.Column(db.String(50), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
 with app.app_context():
     db.create_all()
+
+# ---------------------------
+# Función: Verificación de VPN
+# ---------------------------
+def ip_es_vpn(ip):
+    if not IPQUALITY_API_KEY or not ip:
+        return False
+    try:
+        url = f"https://ipqualityscore.com/api/json/ip/{IPQUALITY_API_KEY}/{ip}"
+        res = requests.get(url)
+        data = res.json()
+        return data.get("proxy") or data.get("vpn") or data.get("tor")
+    except:
+        return False
+
+# ---------------------------
+# Función: Verificación de rate limit
+# ---------------------------
+def esta_dentro_de_limite(ip):
+    ultima = IPLog.query.filter_by(ip=ip).order_by(IPLog.timestamp.desc()).first()
+    ahora = datetime.utcnow()
+    if ultima and ahora - ultima.timestamp < RATE_LIMIT_WINDOW:
+        return False
+    db.session.add(IPLog(ip=ip, timestamp=ahora))
+    db.session.commit()
+    return True
 
 # ---------------------------
 # Página de inicio
@@ -45,7 +76,7 @@ def index():
     return "Bienvenido al sistema de votación. Este enlace debe ser accedido desde WhatsApp."
 
 # ---------------------------
-# Página de votación protegida con token cifrado
+# Página de votación protegida
 # ---------------------------
 @app.route('/votar')
 def votar():
@@ -54,23 +85,30 @@ def votar():
         return "Acceso no válido."
 
     try:
-        numero = serializer.loads(token)
+        numero = serializer.loads(token, max_age=3600)  # Enlace válido por 1 hora
+    except SignatureExpired:
+        return "Este enlace ha expirado. Solicita uno nuevo."
     except BadSignature:
         return "Enlace inválido o alterado."
 
-    voto_existente = Voto.query.filter_by(numero=numero).first()
-    if voto_existente:
+    if Voto.query.filter_by(numero=numero).first():
         return "Este número ya ha votado. Gracias por participar."
 
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 10:
+
+    if ip_es_vpn(ip):
+        return "No se permite votar desde conexiones VPN o proxy."
+
+    if not esta_dentro_de_limite(ip):
+        return "Por favor espera un momento antes de volver a intentarlo."
+
+    if Voto.query.filter_by(ip=ip).count() >= 10:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
     return render_template("votar.html", numero=numero)
 
 # ---------------------------
-# Procesar el voto
+# Enviar voto
 # ---------------------------
 @app.route('/enviar_voto', methods=['POST'])
 def enviar_voto():
@@ -83,24 +121,23 @@ def enviar_voto():
     if Voto.query.filter_by(numero=numero).first():
         return "Ya registramos tu voto."
 
-    votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 10:
+    if ip_es_vpn(ip):
+        return "Voto denegado. No se permite votar desde una VPN o proxy."
+
+    if not esta_dentro_de_limite(ip):
+        return "Por favor espera un momento antes de intentar votar."
+
+    if Voto.query.filter_by(ip=ip).count() >= 10:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
-    nuevo_voto = Voto(
-        numero=numero,
-        candidato=candidato,
-        pais=pais,
-        ciudad=ciudad,
-        ip=ip
-    )
+    nuevo_voto = Voto(numero=numero, candidato=candidato, pais=pais, ciudad=ciudad, ip=ip)
     db.session.add(nuevo_voto)
     db.session.commit()
 
     return f"Gracias por tu voto. Has elegido: {candidato}.<br>Ubicación: {ciudad}, {pais}"
 
 # ---------------------------
-# Enviar mensaje con link cifrado vía WhatsApp
+# Enviar mensaje por WhatsApp con token cifrado
 # ---------------------------
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
@@ -108,33 +145,32 @@ def whatsapp_reply():
     numero = sender.replace("whatsapp:", "").strip()
 
     token = serializer.dumps(numero)
-    link_votacion = f"https://primariasbunker.org/votar?token={token}"  # Este debe ser el formato final
+    link_votacion = f"https://primariasbunker.org/votar?token={token}"
 
     response = MessagingResponse()
     msg = response.message()
     msg.body(f"Hola, gracias por participar en la votación.\n\nHaz clic para votar:\n{link_votacion}")
     return str(response)
 
-
 # ---------------------------
-# Eliminar voto (para pruebas o depuración)
+# Borrar voto manualmente (solo para pruebas)
 # ---------------------------
 @app.route('/borrar_voto')
 def borrar_voto():
     numero = request.args.get('numero')
     if not numero:
-        return "Falta el número en la URL. Usa /borrar_voto?numero=whatsapp:+59167692624"
+        return "Falta el número. Usa /borrar_voto?numero=whatsapp:+59167692624"
 
     voto = Voto.query.filter_by(numero=numero).first()
     if voto:
         db.session.delete(voto)
         db.session.commit()
-        return f"Voto del número {numero} eliminado correctamente. Ya puedes volver a votar."
+        return f"Voto del número {numero} eliminado correctamente."
     else:
         return "No se encontró ningún voto con ese número."
 
 # ---------------------------
-# Ejecutar la app localmente
+# Ejecutar localmente
 # ---------------------------
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,5 +1,3 @@
-<!-- templates/votar.html -->
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -54,6 +52,7 @@
 <body class="container mt-5">
     <h2 class="mb-4">Elecciones Ciudadanas 2025</h2>
     <form method="post" action="/enviar_voto">
+        <!-- El número ya viene desencriptado desde el servidor -->
         <input type="hidden" name="numero" value="{{ numero }}">
 
         <div class="mb-3">
