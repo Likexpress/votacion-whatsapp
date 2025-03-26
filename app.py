@@ -108,8 +108,30 @@ def enviar_voto():
     anio = request.form.get('anio_nacimiento')
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 
-    if not all([numero, ci, candidato, pais, ciudad, dia, mes, anio]):
-        return "Faltan datos obligatorios."
+    if not numero:
+        return "Error: el número de WhatsApp es obligatorio."
+
+    if not ci:
+        return "Error: el número de carnet de identidad es obligatorio."
+
+    if not pais:
+        return "Error: el país es obligatorio."
+
+    if not ciudad:
+        return "Error: la ciudad es obligatoria."
+
+    if not dia:
+        return "Error: el día de nacimiento es obligatorio."
+
+    if not mes:
+        return "Error: el mes de nacimiento es obligatorio."
+
+    if not anio:
+        return "Error: el año de nacimiento es obligatorio."
+
+    if not candidato:
+        return "Error: debes seleccionar un candidato."
+
 
     if Voto.query.filter_by(numero=numero).first():
         return "Ya registramos tu voto."
