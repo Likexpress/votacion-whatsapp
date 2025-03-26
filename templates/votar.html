@@ -14,7 +14,7 @@
       background-color: #f4f6f9;
     }
     .form-wrapper {
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
     }
     .logo {
@@ -33,12 +33,12 @@
       margin-bottom: 12px;
     }
     .candidato-item img {
-      width: 55px;
-      height: 55px;
+      width: 50px;
+      height: 50px;
       object-fit: cover;
       border-radius: 50%;
-      margin-right: 15px;
-      border: 1px solid #ddd;
+      margin-right: 12px;
+      border: 1px solid #ccc;
     }
     .resumen {
       background-color: #fff;
@@ -84,18 +84,9 @@
             <div class="col">
               <select class="form-select" name="mes_nacimiento" required>
                 <option value="">Mes</option>
-                <option value="1">Enero</option>
-                <option value="2">Febrero</option>
-                <option value="3">Marzo</option>
-                <option value="4">Abril</option>
-                <option value="5">Mayo</option>
-                <option value="6">Junio</option>
-                <option value="7">Julio</option>
-                <option value="8">Agosto</option>
-                <option value="9">Septiembre</option>
-                <option value="10">Octubre</option>
-                <option value="11">Noviembre</option>
-                <option value="12">Diciembre</option>
+                {% for mes in ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] %}
+                <option value="{{ loop.index }}">{{ mes }}</option>
+                {% endfor %}
               </select>
             </div>
             <div class="col">
@@ -119,20 +110,24 @@
           <select id="ciudad" name="ciudad" class="form-select" required></select>
         </div>
 
-        <!-- Candidatos -->
+        <!-- Candidatos en dos columnas para escritorio -->
         <div class="mb-3">
           <label class="form-label">Elige tu candidato:</label>
-          {% for candidato in [
-            'Amparo Ballivian', 'Chi Hyun Chung', 'Edgar Uriona',
-            'Edmar Lara', 'Jaime Dunn', 'Jorge Quiroga Ramirez',
-            'José Carlos Sánchez', 'Manfred Reyes Villa',
-            'Rodrigo Paz Pereira', 'Samuel Doria Medina'] %}
-          <div class="form-check candidato-item">
-            <input class="form-check-input me-2" type="radio" name="candidato" value="{{ candidato }}" required>
-            <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.png') }}" alt="{{ candidato }}">
-            <label class="form-check-label">{{ candidato }}</label>
+          <div class="row">
+            {% for candidato in [
+              'Amparo Ballivian', 'Chi Hyun Chung', 'Edgar Uriona',
+              'Edmar Lara', 'Jaime Dunn', 'Jorge Quiroga Ramirez',
+              'José Carlos Sánchez', 'Manfred Reyes Villa',
+              'Rodrigo Paz Pereira', 'Samuel Doria Medina'] %}
+            <div class="col-md-6">
+              <div class="form-check candidato-item">
+                <input class="form-check-input me-2" type="radio" name="candidato" value="{{ candidato }}" required>
+                <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.png') }}" alt="{{ candidato }}">
+                <label class="form-check-label">{{ candidato }}</label>
+              </div>
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
         </div>
 
         <!-- Botón -->
