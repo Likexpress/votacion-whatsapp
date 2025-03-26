@@ -4,7 +4,14 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 import os
 
+# ---------------------------
+# Inicialización de la aplicación Flask
+# ---------------------------
 app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Bienvenido al sistema de votación. Este enlace debe ser accedido desde WhatsApp."
 
 # ---------------------------
 # Configuración de la base de datos PostgreSQL
@@ -14,7 +21,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # ---------------------------
-# Modelo de tabla: votos
+# Modelo de tabla: Voto
 # ---------------------------
 class Voto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,10 +33,9 @@ class Voto(db.Model):
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ---------------------------
-# Crear tabla si no existe (solo una vez)
+# Crear tabla si no existe (forma compatible con Flask 3.x)
 # ---------------------------
-@app.before_first_request
-def crear_tabla():
+with app.app_context():
     db.create_all()
 
 # ---------------------------
@@ -53,7 +59,6 @@ def votar():
         <title>Elecciones Ciudadanas 2025</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
@@ -62,15 +67,12 @@ def votar():
                 const res = await fetch("https://countriesnow.space/api/v0.1/countries");
                 const data = await res.json();
                 const paises = data.data;
-
                 const selectPais = $('#pais');
                 paises.forEach(p => {
                     const option = new Option(p.country, p.country, false, false);
                     selectPais.append(option);
                 });
-
                 selectPais.trigger('change');
-
                 selectPais.on('change', function () {
                     const paisSeleccionado = $(this).val();
                     cargarCiudades(paisSeleccionado);
@@ -80,28 +82,23 @@ def votar():
             async function cargarCiudades(pais) {
                 const selectCiudad = $('#ciudad');
                 selectCiudad.empty().append(new Option("Cargando...", "", false, false)).trigger('change');
-
                 const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ country: pais })
                 });
-
                 const data = await res.json();
                 selectCiudad.empty().append(new Option("Seleccione una ciudad", "", false, false));
-
                 data.data.forEach(c => {
                     const option = new Option(c, c, false, false);
                     selectCiudad.append(option);
                 });
-
                 selectCiudad.trigger('change');
             }
 
             $(document).ready(function () {
                 $('#pais').select2({ placeholder: "Seleccione un país", width: '100%' });
                 $('#ciudad').select2({ placeholder: "Seleccione una ciudad", width: '100%' });
-
                 cargarPaises();
             });
         </script>
@@ -181,7 +178,7 @@ def enviar_voto():
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
     sender = request.values.get('From', '')
-    link_votacion = f"https://votacion-whatsapp.onrender.com/votar?numero={sender}"
+    link_votacion = f"https://primariasbunker.org/votar?numero={sender}"
 
     response = MessagingResponse()
     msg = response.message()
