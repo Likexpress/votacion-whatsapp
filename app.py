@@ -160,7 +160,7 @@ def whatsapp_reply():
 def borrar_voto():
     numero = request.args.get('numero')
     if not numero:
-        return "Falta el número. Usa /borrar_voto?numero=whatsapp:+59167692624"
+        return "Falta el número. Usa /borrar_voto?numero=whatsapp:+591XXXXXXXX"
 
     voto = Voto.query.filter_by(numero=numero).first()
     if voto:
