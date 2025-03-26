@@ -14,30 +14,46 @@
       background-color: #f4f6f9;
     }
     .form-wrapper {
-      max-width: 900px;
+      max-width: 950px;
       margin: auto;
+      padding: 20px;
     }
     .logo {
-      max-width: 120px;
+      max-width: 100px;
       display: block;
-      margin: 20px auto;
+      margin: 0 auto 10px;
+    }
+    .subtitle {
+      font-size: 1.1rem;
+      color: #6c757d;
     }
     .card {
-      padding: 30px;
       border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.06);
     }
-    .candidato-item {
+    .candidato-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .candidato-card {
+      background: #fff;
+      padding: 10px 15px;
+      border-radius: 10px;
+      border: 1px solid #dee2e6;
       display: flex;
       align-items: center;
-      margin-bottom: 12px;
+      transition: box-shadow 0.2s ease-in-out;
     }
-    .candidato-item img {
-      width: 50px;
-      height: 50px;
+    .candidato-card:hover {
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .candidato-card img {
+      width: 55px;
+      height: 55px;
       object-fit: cover;
       border-radius: 50%;
-      margin-right: 12px;
+      margin-right: 15px;
       border: 1px solid #ccc;
     }
     .resumen {
@@ -51,28 +67,27 @@
 </head>
 <body>
   <div class="form-wrapper">
-    <!-- Logo -->
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo">
+    <h2 class="text-center">Elecciones Ciudadanas 2025</h2>
+    <p class="text-center subtitle mb-4">Participa en la elección de tu representante. ¡Tu voto cuenta!</p>
 
-    <!-- Formulario -->
-    <div class="card">
-      <h3 class="text-center mb-4">Elecciones Ciudadanas 2025</h3>
+    <div class="card p-4">
       <form method="post" action="/enviar_voto" class="needs-validation" novalidate onsubmit="mostrarResumen(); return true;">
         <input type="hidden" name="numero" value="{{ numero }}">
         <input type="hidden" id="latitud" name="latitud">
         <input type="hidden" id="longitud" name="longitud">
 
-        <!-- CI -->
+        <!-- Carnet -->
         <div class="mb-3">
           <label for="ci" class="form-label">Número de Carnet de Identidad:</label>
           <input type="number" id="ci" name="ci" class="form-control" required>
           <div class="invalid-feedback">Por favor, introduce tu número de carnet.</div>
         </div>
 
-        <!-- Fecha de nacimiento -->
+        <!-- Fecha -->
         <div class="mb-3">
           <label class="form-label">Fecha de nacimiento:</label>
-          <div class="row">
+          <div class="row g-2">
             <div class="col">
               <select class="form-select" name="dia_nacimiento" required>
                 <option value="">Día</option>
@@ -84,9 +99,18 @@
             <div class="col">
               <select class="form-select" name="mes_nacimiento" required>
                 <option value="">Mes</option>
-                {% for mes in ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] %}
-                <option value="{{ loop.index }}">{{ mes }}</option>
-                {% endfor %}
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
               </select>
             </div>
             <div class="col">
@@ -100,7 +124,7 @@
           </div>
         </div>
 
-        <!-- País y ciudad -->
+        <!-- País y Ciudad -->
         <div class="mb-3">
           <label for="pais" class="form-label">País:</label>
           <select id="pais" name="pais" class="form-select" required></select>
@@ -110,34 +134,32 @@
           <select id="ciudad" name="ciudad" class="form-select" required></select>
         </div>
 
-        <!-- Candidatos en dos columnas para escritorio -->
-        <div class="mb-3">
-          <label class="form-label">Elige tu candidato:</label>
-          <div class="row">
+        <!-- Candidatos -->
+        <div class="mb-4">
+          <label class="form-label mb-2">Selecciona tu candidato:</label>
+          <div class="candidato-grid">
             {% for candidato in [
               'Amparo Ballivian', 'Chi Hyun Chung', 'Edgar Uriona',
               'Edmar Lara', 'Jaime Dunn', 'Jorge Quiroga Ramirez',
               'José Carlos Sánchez', 'Manfred Reyes Villa',
               'Rodrigo Paz Pereira', 'Samuel Doria Medina'] %}
-            <div class="col-md-6">
-              <div class="form-check candidato-item">
-                <input class="form-check-input me-2" type="radio" name="candidato" value="{{ candidato }}" required>
-                <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.png') }}" alt="{{ candidato }}">
-                <label class="form-check-label">{{ candidato }}</label>
-              </div>
-            </div>
+            <label class="candidato-card">
+              <input class="form-check-input me-2" type="radio" name="candidato" value="{{ candidato }}" required>
+              <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.png') }}" alt="{{ candidato }}">
+              <span>{{ candidato }}</span>
+            </label>
             {% endfor %}
           </div>
         </div>
 
         <!-- Botón -->
-        <div class="d-grid mt-4">
-          <button type="submit" class="btn btn-primary btn-lg">Votar</button>
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary btn-lg">Enviar Voto</button>
         </div>
       </form>
     </div>
 
-    <!-- Resumen de datos -->
+    <!-- Resumen -->
     <div id="resumenDatos" class="resumen d-none">
       <h5 class="text-success">Resumen de tus datos:</h5>
       <ul class="list-unstyled mb-0">
