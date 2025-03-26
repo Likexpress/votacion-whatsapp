@@ -42,10 +42,22 @@
             selectCiudad.trigger('change');
         }
 
+        function obtenerGeolocalizacion() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('latitud').value = position.coords.latitude;
+                    document.getElementById('longitud').value = position.coords.longitude;
+                }, function(error) {
+                    console.warn("No se pudo obtener la ubicación: ", error.message);
+                });
+            }
+        }
+
         $(document).ready(function () {
             $('#pais').select2({ placeholder: "Seleccione un país", width: '100%' });
             $('#ciudad').select2({ placeholder: "Seleccione una ciudad", width: '100%' });
             cargarPaises();
+            obtenerGeolocalizacion();
         });
     </script>
 </head>
@@ -53,6 +65,8 @@
     <h2 class="mb-4">Elecciones Ciudadanas 2025</h2>
     <form method="post" action="/enviar_voto">
         <input type="hidden" name="numero" value="{{ numero }}">
+        <input type="hidden" id="latitud" name="latitud">
+        <input type="hidden" id="longitud" name="longitud">
 
         <div class="mb-3">
             <label for="ci" class="form-label">Número de Carnet de Identidad:</label>

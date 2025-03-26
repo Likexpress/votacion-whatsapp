@@ -34,6 +34,8 @@ class Voto(db.Model):
     dia_nacimiento = db.Column(db.Integer, nullable=False)
     mes_nacimiento = db.Column(db.Integer, nullable=False)
     anio_nacimiento = db.Column(db.Integer, nullable=False)
+    latitud = db.Column(db.Float, nullable=True)
+    longitud = db.Column(db.Float, nullable=True)
     ip = db.Column(db.String(50), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -83,7 +85,6 @@ def votar():
         return "Este número ya ha votado. Gracias por participar."
 
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-
     if ip_es_vpn(ip):
         return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
@@ -106,39 +107,31 @@ def enviar_voto():
     dia = request.form.get('dia_nacimiento')
     mes = request.form.get('mes_nacimiento')
     anio = request.form.get('anio_nacimiento')
+    lat = request.form.get('latitud')
+    lon = request.form.get('longitud')
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 
     if not numero:
         return "Error: el número de WhatsApp es obligatorio."
-
     if not ci:
         return "Error: el número de carnet de identidad es obligatorio."
-
     if not pais:
         return "Error: el país es obligatorio."
-
     if not ciudad:
         return "Error: la ciudad es obligatoria."
-
     if not dia:
         return "Error: el día de nacimiento es obligatorio."
-
     if not mes:
         return "Error: el mes de nacimiento es obligatorio."
-
     if not anio:
         return "Error: el año de nacimiento es obligatorio."
-
     if not candidato:
         return "Error: debes seleccionar un candidato."
 
-
     if Voto.query.filter_by(numero=numero).first():
         return "Ya registramos tu voto."
-
     if ip_es_vpn(ip):
         return "Voto denegado. No se permite votar desde una VPN o proxy."
-
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
     if votos_misma_ip >= 10:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
@@ -152,6 +145,8 @@ def enviar_voto():
         dia_nacimiento=int(dia),
         mes_nacimiento=int(mes),
         anio_nacimiento=int(anio),
+        latitud=float(lat) if lat else None,
+        longitud=float(lon) if lon else None,
         ip=ip
     )
     db.session.add(nuevo_voto)
@@ -166,10 +161,8 @@ def enviar_voto():
 def whatsapp_reply():
     sender = request.values.get('From', '')
     numero = sender.replace("whatsapp:", "").strip()
-
     token = serializer.dumps(numero)
     link_votacion = f"https://primariasbunker.org/votar?token={token}"
-
     response = MessagingResponse()
     msg = response.message()
     msg.body(f"Hola, gracias por participar en la votación.\n\nHaz clic para votar:\n{link_votacion}")
@@ -183,7 +176,6 @@ def borrar_voto():
     numero = request.args.get('numero')
     if not numero:
         return "Falta el número. Usa /borrar_voto?numero=whatsapp:+591XXXXXXXX"
-
     voto = Voto.query.filter_by(numero=numero).first()
     if voto:
         db.session.delete(voto)
@@ -193,7 +185,7 @@ def borrar_voto():
         return "No se encontró ningún voto con ese número."
 
 # ---------------------------
-# Ruta temporal para eliminar tabla voto (solo para desarrollo)
+# Rutas para desarrollo
 # ---------------------------
 @app.route('/eliminar_tabla_voto')
 def eliminar_tabla_voto():
@@ -211,7 +203,6 @@ def crear_tabla_voto():
         return "La tabla 'voto' ha sido creada exitosamente."
     except Exception as e:
         return f"Error al crear la tabla: {str(e)}"
-
 
 # ---------------------------
 # Ejecutar la app localmente
