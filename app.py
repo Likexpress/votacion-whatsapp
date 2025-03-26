@@ -13,7 +13,7 @@ app = Flask(__name__)
 SECRET_KEY = os.environ.get("SECRET_KEY", "clave-secreta-segura")
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 IPQUALITY_API_KEY = os.environ.get("IPQUALITY_API_KEY")
-RATE_LIMIT_WINDOW = timedelta(seconds=60)  # Límite de 1 minuto entre accesos por IP
+RATE_LIMIT_WINDOW = timedelta(seconds=60)
 
 # ---------------------------
 # Configuración de la base de datos PostgreSQL
@@ -52,13 +52,12 @@ def ip_es_vpn(ip):
         url = f"https://ipqualityscore.com/api/json/ip/{IPQUALITY_API_KEY}/{ip}"
         res = requests.get(url)
         data = res.json()
-        print("Verificando IP:", ip)  # ← Para depuración
-        print("Respuesta de IPQualityScore:", data)  # ← VER LA RESPUESTA COMPLETA
+        print("Verificando IP:", ip)
+        print("Respuesta de IPQualityScore:", data)
         return data.get("proxy") or data.get("vpn") or data.get("tor")
     except Exception as e:
         print("Error en verificación de IP:", e)
         return False
-
 
 # ---------------------------
 # Función: Verificación de rate limit
@@ -89,7 +88,7 @@ def votar():
         return "Acceso no válido."
 
     try:
-        numero = serializer.loads(token, max_age=3600)  # Enlace válido por 1 hora
+        numero = serializer.loads(token, max_age=3600)  # Token válido 1 hora
     except SignatureExpired:
         return "Este enlace ha expirado. Solicita uno nuevo."
     except BadSignature:
@@ -99,7 +98,6 @@ def votar():
         return "Este número ya ha votado. Gracias por participar."
 
     ip = (request.headers.get('X-Forwarded-For') or request.remote_addr).split(',')[0].strip()
-
 
     if ip_es_vpn(ip):
         return "No se permite votar desde conexiones VPN o proxy."
@@ -121,7 +119,7 @@ def enviar_voto():
     candidato = request.form.get('candidato')
     pais = request.form.get('pais')
     ciudad = request.form.get('ciudad')
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    ip = (request.headers.get('X-Forwarded-For') or request.remote_addr).split(',')[0].strip()
 
     if Voto.query.filter_by(numero=numero).first():
         return "Ya registramos tu voto."
