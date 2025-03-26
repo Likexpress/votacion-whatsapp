@@ -10,7 +10,7 @@ import requests
 # Configuración
 # ---------------------------
 app = Flask(__name__)
-SECRET_KEY = os.environ.get("SECRET_KEY", "clave-secreta-segura")
+SECRET_KEY = os.environ.get("SECRET_KEY", "uFo2UB4b1rdgKaYnPJ6ZUrUKjSxX0r60")
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 IPQUALITY_API_KEY = os.environ.get("IPQUALITY_API_KEY")
 RATE_LIMIT_WINDOW = timedelta(seconds=60)
@@ -34,16 +34,22 @@ class Voto(db.Model):
     ip = db.Column(db.String(50), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ---------------------------
+# Modelo para control de IPs (rate limiting)
+# ---------------------------
 class IPLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(50), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ---------------------------
+# Crear las tablas si no existen
+# ---------------------------
 with app.app_context():
     db.create_all()
 
 # ---------------------------
-# Función: Verificación de VPN
+# Verificar si una IP es VPN o proxy
 # ---------------------------
 def ip_es_vpn(ip):
     if not IPQUALITY_API_KEY or not ip:
@@ -52,15 +58,13 @@ def ip_es_vpn(ip):
         url = f"https://ipqualityscore.com/api/json/ip/{IPQUALITY_API_KEY}/{ip}"
         res = requests.get(url)
         data = res.json()
-        print("Verificando IP:", ip)
-        print("Respuesta de IPQualityScore:", data)
         return data.get("proxy") or data.get("vpn") or data.get("tor")
     except Exception as e:
-        print("Error en verificación de IP:", e)
+        print("Error verificando IP:", e)
         return False
 
 # ---------------------------
-# Función: Verificación de rate limit
+# Verificar si una IP accedió recientemente (rate limit)
 # ---------------------------
 def esta_dentro_de_limite(ip):
     ultima = IPLog.query.filter_by(ip=ip).order_by(IPLog.timestamp.desc()).first()
@@ -79,7 +83,7 @@ def index():
     return "Bienvenido al sistema de votación. Este enlace debe ser accedido desde WhatsApp."
 
 # ---------------------------
-# Página de votación protegida
+# Página de votación
 # ---------------------------
 @app.route('/votar')
 def votar():
@@ -88,7 +92,7 @@ def votar():
         return "Acceso no válido."
 
     try:
-        numero = serializer.loads(token, max_age=3600)  # Token válido 1 hora
+        numero = serializer.loads(token, max_age=3600)  # Token válido por 1 hora
     except SignatureExpired:
         return "Este enlace ha expirado. Solicita uno nuevo."
     except BadSignature:
@@ -140,7 +144,7 @@ def enviar_voto():
     return f"Gracias por tu voto. Has elegido: {candidato}.<br>Ubicación: {ciudad}, {pais}"
 
 # ---------------------------
-# Enviar mensaje por WhatsApp con token cifrado
+# WhatsApp: Enviar link con token cifrado
 # ---------------------------
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
@@ -156,7 +160,7 @@ def whatsapp_reply():
     return str(response)
 
 # ---------------------------
-# Borrar voto manualmente (solo para pruebas)
+# Ruta para borrar un voto (para pruebas)
 # ---------------------------
 @app.route('/borrar_voto')
 def borrar_voto():
