@@ -112,7 +112,7 @@
       <div class="form-check mb-2">
         <input class="form-check-input" type="radio" name="candidato" id="candidato{{ loop.index }}" value="{{ candidato }}" required>
         <label class="form-check-label" for="candidato{{ loop.index }}">
-          <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.jpg') }}" class="candidato-img" alt="{{ candidato }}">
+          <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.png') }}" class="candidato-img" alt="{{ candidato }}">
           {{ candidato }}
         </label>
       </div>
