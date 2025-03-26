@@ -3,30 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <title>Elecciones Ciudadanas 2025</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <style>
-    .resumen {
+    body {
       background-color: #f8f9fa;
-      padding: 15px;
+    }
+    .resumen {
+      background-color: #fff;
       border: 1px solid #dee2e6;
       border-radius: 5px;
+      padding: 15px;
       margin-top: 20px;
+    }
+    .candidato-img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    .form-check-label {
+      display: flex;
+      align-items: center;
     }
   </style>
 </head>
-<body class="container mt-5 mb-5">
-  <h2 class="mb-4 text-center">Elecciones Ciudadanas 2025</h2>
+<body class="container mt-4 mb-5">
 
+  <!-- LOGO -->
+  <div class="text-center mb-4">
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" width="100" height="100">
+    <h2 class="mt-2">Elecciones Ciudadanas 2025</h2>
+  </div>
+
+  <!-- FORMULARIO -->
   <form method="post" action="/enviar_voto" class="needs-validation" novalidate onsubmit="mostrarResumen(); return true;">
-    <!-- Valores ocultos -->
     <input type="hidden" name="numero" value="{{ numero }}">
     <input type="hidden" id="latitud" name="latitud">
     <input type="hidden" id="longitud" name="longitud">
 
-    <!-- Carnet de Identidad -->
+    <!-- CI -->
     <div class="mb-3">
       <label for="ci" class="form-label">Número de Carnet de Identidad:</label>
       <input type="number" id="ci" name="ci" class="form-control" required>
@@ -73,7 +91,7 @@
       </div>
     </div>
 
-    <!-- País y ciudad -->
+    <!-- País / Ciudad -->
     <div class="mb-3">
       <label for="pais" class="form-label">País:</label>
       <select id="pais" name="pais" class="form-select" required></select>
@@ -83,7 +101,7 @@
       <select id="ciudad" name="ciudad" class="form-select" required></select>
     </div>
 
-    <!-- Candidato -->
+    <!-- Candidatos -->
     <div class="mb-3">
       <label class="form-label">Elige tu candidato:</label>
       {% for candidato in [
@@ -91,10 +109,13 @@
         'Edmar Lara', 'Jaime Dunn', 'Jorge Quiroga Ramirez',
         'José Carlos Sánchez', 'Manfred Reyes Villa',
         'Rodrigo Paz Pereira', 'Samuel Doria Medina'] %}
-        <div class="form-check">
-          <input class="form-check-input" type="radio" name="candidato" value="{{ candidato }}" required>
-          <label class="form-check-label">{{ candidato }}</label>
-        </div>
+      <div class="form-check mb-2">
+        <input class="form-check-input" type="radio" name="candidato" id="candidato{{ loop.index }}" value="{{ candidato }}" required>
+        <label class="form-check-label" for="candidato{{ loop.index }}">
+          <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.jpg') }}" class="candidato-img" alt="{{ candidato }}">
+          {{ candidato }}
+        </label>
+      </div>
       {% endfor %}
     </div>
 
@@ -104,12 +125,12 @@
     </div>
   </form>
 
-  <!-- Resumen de datos -->
+  <!-- Resumen -->
   <div id="resumenDatos" class="resumen d-none">
     <h5 class="text-success">Resumen de tus datos:</h5>
     <ul class="list-unstyled mb-0">
       <li><strong>CI:</strong> <span id="res_ci"></span></li>
-      <li><strong>Fecha de Nacimiento:</strong> <span id="res_fecha"></span></li>
+      <li><strong>Fecha de nacimiento:</strong> <span id="res_fecha"></span></li>
       <li><strong>País:</strong> <span id="res_pais"></span></li>
       <li><strong>Ciudad:</strong> <span id="res_ciudad"></span></li>
       <li><strong>Candidato:</strong> <span id="res_candidato"></span></li>
@@ -118,7 +139,10 @@
     </ul>
   </div>
 
-  <!-- Scripts personalizados -->
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script>
     async function cargarPaises() {
       const res = await fetch("https://countriesnow.space/api/v0.1/countries");
