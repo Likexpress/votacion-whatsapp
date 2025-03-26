@@ -98,7 +98,8 @@ def votar():
     if Voto.query.filter_by(numero=numero).first():
         return "Este número ya ha votado. Gracias por participar."
 
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    ip = (request.headers.get('X-Forwarded-For') or request.remote_addr).split(',')[0].strip()
+
 
     if ip_es_vpn(ip):
         return "No se permite votar desde conexiones VPN o proxy."
