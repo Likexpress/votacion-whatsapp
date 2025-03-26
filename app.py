@@ -52,9 +52,13 @@ def ip_es_vpn(ip):
         url = f"https://ipqualityscore.com/api/json/ip/{IPQUALITY_API_KEY}/{ip}"
         res = requests.get(url)
         data = res.json()
+        print("Verificando IP:", ip)  # ← Para depuración
+        print("Respuesta de IPQualityScore:", data)  # ← VER LA RESPUESTA COMPLETA
         return data.get("proxy") or data.get("vpn") or data.get("tor")
-    except:
+    except Exception as e:
+        print("Error en verificación de IP:", e)
         return False
+
 
 # ---------------------------
 # Función: Verificación de rate limit
