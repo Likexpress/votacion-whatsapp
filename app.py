@@ -3,22 +3,16 @@ from twilio.twiml.messaging_response import MessagingResponse
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeSerializer, BadSignature
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-import requests
 import os
+import requests
 
 # ---------------------------
-# Inicialización de Flask y seguridad
+# Inicialización de la aplicación Flask
 # ---------------------------
 app = Flask(__name__)
 SECRET_KEY = os.environ.get("SECRET_KEY", "clave-secreta-segura")
 serializer = URLSafeSerializer(SECRET_KEY)
-
-# ---------------------------
-# Rate Limiting (5 por minuto por IP)
-# ---------------------------
-limiter = Limiter(get_remote_address, app=app, default_limits=["5 per minute"])
+IPQUALITY_API_KEY = os.environ.get("IPQUALITY_API_KEY")
 
 # ---------------------------
 # Configuración de la base de datos PostgreSQL
@@ -46,16 +40,16 @@ with app.app_context():
     db.create_all()
 
 # ---------------------------
-# Función para detectar IPs sospechosas
+# Función para verificar IP con IPQualityScore
 # ---------------------------
-def es_ip_sospechosa(ip):
-    api_key = os.getenv("IPQUALITY_API_KEY", "")
-    if not api_key:
-        return False  # No se bloquea si no hay API Key
-    url = f"https://ipqualityscore.com/api/json/ip/{api_key}/{ip}"
+def ip_es_vpn(ip):
+    if not IPQUALITY_API_KEY or not ip:
+        return False
     try:
-        resp = requests.get(url).json()
-        return resp.get("proxy") or resp.get("vpn") or resp.get("tor")
+        url = f"https://ipqualityscore.com/api/json/ip/{IPQUALITY_API_KEY}/{ip}"
+        res = requests.get(url)
+        data = res.json()
+        return data.get("proxy") or data.get("vpn") or data.get("tor")
     except:
         return False
 
@@ -70,25 +64,27 @@ def index():
 # Página de votación protegida con token cifrado
 # ---------------------------
 @app.route('/votar')
-@limiter.limit("5 per minute")
 def votar():
     token = request.args.get('token')
     if not token:
         return "Acceso no válido."
 
     try:
-        numero = serializer.loads(token, max_age=900)  # 15 minutos
+        numero = serializer.loads(token)
     except BadSignature:
-        return "Enlace inválido, alterado o expirado."
+        return "Enlace inválido o alterado."
 
     voto_existente = Voto.query.filter_by(numero=numero).first()
     if voto_existente:
         return "Este número ya ha votado. Gracias por participar."
 
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    if es_ip_sospechosa(ip):
-        return "Votación no permitida desde esta red."
+    
+    # Verificación contra VPN/Proxy
+    if ip_es_vpn(ip):
+        return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
+    # Límite de 10 votos por IP
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
     if votos_misma_ip >= 10:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
@@ -99,7 +95,6 @@ def votar():
 # Procesar el voto
 # ---------------------------
 @app.route('/enviar_voto', methods=['POST'])
-@limiter.limit("5 per minute")
 def enviar_voto():
     numero = request.form.get('numero')
     candidato = request.form.get('candidato')
@@ -110,8 +105,8 @@ def enviar_voto():
     if Voto.query.filter_by(numero=numero).first():
         return "Ya registramos tu voto."
 
-    if es_ip_sospechosa(ip):
-        return "Votación no permitida desde esta red."
+    if ip_es_vpn(ip):
+        return "Voto denegado. No se permite votar desde una VPN o proxy."
 
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
     if votos_misma_ip >= 10:
@@ -133,7 +128,6 @@ def enviar_voto():
 # Enviar mensaje con link cifrado vía WhatsApp
 # ---------------------------
 @app.route('/whatsapp', methods=['POST'])
-@limiter.limit("5 per minute")
 def whatsapp_reply():
     sender = request.values.get('From', '')
     numero = sender.replace("whatsapp:", "").strip()
@@ -147,19 +141,19 @@ def whatsapp_reply():
     return str(response)
 
 # ---------------------------
-# Eliminar voto para pruebas o reinicio
+# Eliminar voto (para pruebas)
 # ---------------------------
 @app.route('/borrar_voto')
 def borrar_voto():
     numero = request.args.get('numero')
     if not numero:
-        return "Falta el número en la URL. Usa /borrar_voto?numero=whatsapp:+591XXXXXXX"
+        return "Falta el número. Usa /borrar_voto?numero=whatsapp:+591XXXXXXXX"
 
     voto = Voto.query.filter_by(numero=numero).first()
     if voto:
         db.session.delete(voto)
         db.session.commit()
-        return f"Voto del número {numero} eliminado correctamente. Ya puedes volver a votar."
+        return f"Voto del número {numero} eliminado correctamente."
     else:
         return "No se encontró ningún voto con ese número."
 
