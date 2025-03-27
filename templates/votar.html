@@ -139,10 +139,10 @@
           <label class="form-label mb-2">Selecciona tu candidato:</label>
           <div class="candidato-grid">
             {% for candidato in [
-              'Amparo Ballivián', 'Chi Hyun Chung', 'Edgar Uriona',
+              'Amparo Ballivian', 'Chi Hyun Chung', 'Edgar Uriona',
               'Edmar Lara', 'Jaime Dunn', 'Jorge Quiroga Ramirez',
               'José Carlos Sánchez', 'Manfred Reyes Villa',
-              'Rodrigo Paz Pereira', 'Samuel Doria Medina'] %}
+              'Rodrigo Paz Pereira', 'Samuel Doria Medina', 'Gustavo Blacutt'] %}
             <label class="candidato-card">
               <input class="form-check-input me-2" type="radio" name="candidato" value="{{ candidato }}" required>
               <img src="{{ url_for('static', filename='img/' + candidato|lower|replace(' ', '-') + '.png') }}" alt="{{ candidato }}">
@@ -151,6 +151,7 @@
             {% endfor %}
           </div>
         </div>
+
 
         <!-- Botón -->
         <div class="d-grid">
@@ -242,5 +243,13 @@
       })();
     });
   </script>
+
+  <!-- Footer -->
+  <footer class="text-center text-muted mt-5 pb-4">
+    <hr>
+    <p class="mb-1">&copy; 2025 <strong>Primarias Bunker</strong></p>
+    <small>Participación ciudadana por un futuro democrático</small>
+  </footer>
 </body>
 </html>
+
