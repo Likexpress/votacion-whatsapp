@@ -250,12 +250,17 @@ def enviar_voto():
 def whatsapp_reply():
     sender = request.values.get('From', '')
     numero = sender.replace("whatsapp:", "").strip()
+
     token = serializer.dumps(numero)
     link_votacion = f"https://primariasbunker.org/votar?token={token}"
+
     response = MessagingResponse()
     msg = response.message()
-    msg.body(f"Hola, gracias por ser parte de este proceso democrático.\n\nHaz clic en el siguiente enlace para emitir tu voto en las Votaciones Primarias Bolivia 2025:\n{link_votacion}")
+    msg.body(f"Hola, gracias por ser parte de este proceso democrático.\n\n"
+             f"Haz clic en el siguiente enlace para emitir tu voto en las Votaciones Primarias Bolivia 2025:\n"
+             f"{link_votacion}")
     return str(response)
+
 
 # ---------------------------
 # Eliminar voto (para pruebas)
