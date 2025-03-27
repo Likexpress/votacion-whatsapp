@@ -120,6 +120,11 @@ def votar():
             <hr>
             <p class="text-secondary">Si crees que esto es un error, por favor contacta con el equipo organizador.</p>
           </div>
+          <footer class="text-center mt-4">
+            <hr>
+            <p class="mb-0 text-muted">&copy; 2025 Primarias Bunker</p>
+            <small class="text-muted">Participación ciudadana por un futuro democrático</small>
+          </footer>
         </body>
         </html>
         """
@@ -236,8 +241,16 @@ def enviar_voto():
             <hr class="my-4">
             <p class="text-muted">Gracias por participar en las <strong>Elecciones Ciudadanas 2025</strong>.</p>
             <p class="text-muted">Tu voz ha sido registrada y cuenta para el futuro democrático de Bolivia.</p>
-            <p class="text-muted">Tu voz ha sido registrada y cuenta para el futuro democrático de Bolivia.</p>
         </div>
+        <!-- NUEVO FOOTER AQUI -->
+        <footer class="text-center mt-4">
+            <hr>
+            <p class="mb-0 text-muted">&copy; 2025 Primarias Bunker</p>
+            <small class="text-muted">Participación ciudadana por un futuro democrático</small>
+        </footer>
+        </body>
+        </html>
+
     </body>
     </html>
     """
