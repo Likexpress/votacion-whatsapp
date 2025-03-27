@@ -165,7 +165,7 @@ def whatsapp_reply():
     link_votacion = f"https://primariasbunker.org/votar?token={token}"
     response = MessagingResponse()
     msg = response.message()
-    msg.body(f"Hola, gracias por participar en la votación.\n\nHaz clic para votar:\n{link_votacion}")
+    msg.body(f"Hola, gracias por ser parte de este proceso democrático.\n\nHaz clic en el siguiente enlace para emitir tu voto en las Votaciones Primarias Bolivia 2025:\n{link_votacion}")
     return str(response)
 
 # ---------------------------
