@@ -106,12 +106,6 @@ def votar():
             .mensaje-wrapper h3 {{
               color: #dc3545;
             }}
-            footer {{
-              margin-top: 40px;
-              text-align: center;
-              font-size: 0.9rem;
-              color: #6c757d;
-            }}
           </style>
         </head>
         <body>
@@ -124,16 +118,11 @@ def votar():
               Agradecemos tu participación en este proceso democrático.
             </p>
             <hr>
-            <p class="text-secondary">Si crees que esto es un error, por favor contacta con el equipo organizador: 76809175.</p>
+            <p class="text-secondary">Si crees que esto es un error, por favor contacta con el equipo organizador.</p>
           </div>
-
-          <footer>
-            &copy; 2025 <strong>Primarias Bunker</strong> &middot; "Por una democracia libre, justa y participativa"
-          </footer>
         </body>
         </html>
         """
-
 
 
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -209,41 +198,34 @@ def enviar_voto():
     <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>Voto en proceso de verificación</title>
+        <title>Voto registrado</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
             body {{
                 background-color: #f8f9fa;
                 padding-top: 50px;
-                font-family: 'Segoe UI', sans-serif;
             }}
             .card-confirmacion {{
-                max-width: 700px;
+                max-width: 600px;
                 margin: auto;
                 padding: 30px;
-                border-radius: 12px;
-                box-shadow: 0 0 15px rgba(0,0,0,0.07);
-                background-color: #ffffff;
+                border-radius: 10px;
+                box-shadow: 0 0 12px rgba(0,0,0,0.08);
+                background-color: #fff;
             }}
             .titulo {{
-                color: #0d6efd;
-                font-weight: 600;
+                color: #198754;
+                font-weight: bold;
             }}
             .detalle {{
-                font-size: 1.05rem;
-            }}
-            footer {{
-                margin-top: 50px;
-                text-align: center;
-                font-size: 0.9rem;
-                color: #6c757d;
+                font-size: 1.1rem;
             }}
         </style>
     </head>
     <body>
         <div class="card card-confirmacion text-center">
-            <h3 class="titulo mb-4">Tu voto está siendo verificado</h3>
+            <h3 class="titulo mb-4">¡Tu voto ha sido registrado exitosamente!</h3>
             <div class="detalle text-start">
                 <p><strong>Candidato elegido:</strong> {candidato}</p>
                 <p><strong>Número de WhatsApp:</strong> {numero}</p>
@@ -253,16 +235,12 @@ def enviar_voto():
             </div>
             <hr class="my-4">
             <p class="text-muted">Gracias por participar en las <strong>Elecciones Ciudadanas 2025</strong>.</p>
-            <p class="text-muted">Estamos validando tu voto para garantizar un proceso democrático seguro y transparente.</p>
+            <p class="text-muted">Tu voz ha sido registrada y cuenta para el futuro democrático de Bolivia.</p>
+            <p class="text-muted">Tu voz ha sido registrada y cuenta para el futuro democrático de Bolivia.</p>
         </div>
-
-        <footer>
-            &copy; 2025 <strong>Primarias Bunker</strong> &middot; "Por una democracia libre, justa y participativa"
-        </footer>
     </body>
     </html>
     """
-
 
 
 
