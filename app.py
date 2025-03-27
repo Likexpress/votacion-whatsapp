@@ -184,7 +184,7 @@ def enviar_voto():
     </head>
     <body>
         <div class="card card-confirmacion text-center">
-            <h3 class="titulo mb-4">✅ ¡Tu voto ha sido registrado exitosamente!</h3>
+            <h3 class="titulo mb-4">¡Tu voto ha sido registrado exitosamente!</h3>
             <div class="detalle text-start">
                 <p><strong>Candidato elegido:</strong> {candidato}</p>
                 <p><strong>Número de WhatsApp:</strong> {numero}</p>
