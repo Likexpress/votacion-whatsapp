@@ -150,37 +150,28 @@ def generar_link():
         if not pais or not numero_local:
             return "Por favor, selecciona un país e ingresa tu número."
 
+        # Obtener código telefónico desde countriesnow API
         try:
-            # Consultamos la API para obtener el código del país
-            url = "https://countriesnow.space/api/v0.1/countries/codes"
-            res = requests.get(url)
-            data = res.json()
+            paises_api = requests.get("https://countriesnow.space/api/v0.1/countries/codes").json()
+            codigo_pais = next((p["dial_code"] for p in paises_api["data"] if p["name"].lower() == pais.lower()), None)
+        except:
+            return "Error al conectar con el servicio de países."
 
-            match = next((c for c in data["data"] if c["name"].lower() == pais.lower()), None)
-            if not match:
-                return "País no reconocido."
+        if not codigo_pais:
+            return "País no reconocido desde la API."
 
-            codigo = match["dial_code"].replace("+", "")  # Ejemplo: "591"
+        # Validación básica del número
+        numero_local = numero_local.strip()
+        if not numero_local.isdigit():
+            return "El número ingresado debe contener solo dígitos."
 
-            # Formamos número internacional
-            numero_completo = f"+{codigo}{numero_local}"
+        numero_formateado = f"{codigo_pais}{numero_local}"
 
-            # Verificamos si es un número válido
-            numero_obj = phonenumbers.parse(numero_completo, None)
-            if not phonenumbers.is_valid_number(numero_obj):
-                return "Número de WhatsApp inválido para el país seleccionado."
-
-            # Formato E164 estandarizado
-            numero_formateado = phonenumbers.format_number(numero_obj, PhoneNumberFormat.E164)
-
-        except Exception as e:
-            return f"Ocurrió un error procesando el número: {str(e)}"
-
-        # Generamos token seguro
+        # Generar token cifrado
         token = serializer.dumps(numero_formateado)
         return redirect(f"/votar?token={token}")
 
-    # Página de formulario GET
+    # Vista GET - mostrar formulario
     return """
     <!DOCTYPE html>
     <html lang="es">
@@ -240,6 +231,7 @@ def generar_link():
     </body>
     </html>
     """
+
 
 
 
