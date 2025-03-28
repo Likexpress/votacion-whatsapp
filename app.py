@@ -308,126 +308,130 @@ def crear_tabla_voto():
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     if request.method == 'POST':
-        codigo_pais = request.form.get('codigo_pais', '').strip().replace('+', '')
-        numero = request.form.get('numero', '').strip().replace('+', '')
+        codigo = request.form.get('codigo')
+        numero = request.form.get('numero')
 
-        if not codigo_pais or not numero:
+        if not codigo or not numero:
             return "Por favor, selecciona un país e ingresa tu número."
 
-        numero_final = f"+{codigo_pais}{numero}"
-        token = serializer.dumps(numero_final)
+        numero_completo = codigo + numero
+        token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
 
     return render_template("generar_link.html")
 
-
     return """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <title>Primarias Bunker - Iniciar Votación</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-      <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-      <style>
-        body {
-          background-color: #f4f6f9;
-          padding-top: 80px;
-        }
-        .logo {
-          max-width: 120px;
-          margin-bottom: 20px;
-        }
-        .card {
-          max-width: 500px;
-          margin: auto;
-          padding: 30px;
-          border-radius: 10px;
-          background: #fff;
-          box-shadow: 0 0 12px rgba(0,0,0,0.06);
-          text-align: center;
-        }
-        .select2-container .select2-selection--single {
-          height: 38px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <img src="/static/img/logo.png" class="logo" alt="Primarias Bunker">
-        <h3 class="mb-3">¡Bienvenido a las Votaciones Primarias 2025!</h3>
-        <p class="text-muted mb-4">Para comenzar, selecciona tu país e ingresa tu número de WhatsApp. Recuerda que solo puedes votar una vez por número.</p>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Iniciar Votación - Primarias Bunker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-        <form method="POST" onsubmit="return validarFormulario()">
-          <div class="mb-3 text-start">
-            <label for="pais" class="form-label">País</label>
-            <select id="pais" class="form-select" required></select>
-          </div>
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding-top: 80px;
+    }
+    .card {
+      max-width: 500px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 0 12px rgba(0,0,0,0.06);
+    }
+    .logo {
+      max-width: 120px;
+      display: block;
+      margin: 0 auto 20px;
+    }
+    .select2-container .select2-selection--single {
+      height: 45px;
+      padding: 6px 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card text-center">
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Bunker" class="logo">
+    <h3 class="mb-3">¡Bienvenido a las Votaciones<br>Primarias 2025!</h3>
+    <p class="text-muted mb-4">
+      Para comenzar, selecciona tu país e ingresa tu número de WhatsApp.
+      Recuerda que solo puedes votar una vez por número.
+    </p>
 
-          <div class="mb-3 text-start">
-            <label for="numero" class="form-label">Número de WhatsApp</label>
-            <div class="input-group">
-              <span class="input-group-text" id="codigo">+000</span>
-              <input type="tel" name="numero" id="numero" class="form-control" placeholder="70000000" required>
-            </div>
-            <small class="text-muted">Ingresa tu número sin el código del país.</small>
-          </div>
-
-          <button type="submit" class="btn btn-success w-100">Generar Enlace de Votación</button>
-        </form>
-
-        <footer class="text-muted mt-4 small">
-          <hr>
-          &copy; 2025 Primarias Bunker<br>
-          <em>Participación ciudadana por un futuro democrático</em>
-        </footer>
+    <form method="POST">
+      <div class="mb-3 text-start">
+        <label for="codigo" class="form-label">País</label>
+        <select id="codigo" name="codigo" class="form-select" required>
+          <option value="">Selecciona un país</option>
+        </select>
       </div>
 
-      <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-      <script>
-        let paises = [];
+      <div class="mb-3 text-start">
+        <label for="numero" class="form-label">Número de WhatsApp</label>
+        <input type="text" name="numero" id="numero" class="form-control" placeholder="70000000" required>
+      </div>
 
-        async function cargarPaises() {
-          const res = await fetch("https://countriesnow.space/api/v0.1/countries/codes");
-          const data = await res.json();
-          paises = data.data;
-          const select = $('#pais');
-          select.append('<option value="">Selecciona un país</option>');
-          paises.forEach(p => {
-            select.append(new Option(p.name + ' (+' + p.dial_code + ')', p.dial_code));
+      <button type="submit" class="btn btn-success w-100">Generar enlace de votación</button>
+    </form>
+
+    <footer class="text-muted mt-4">
+      <hr>
+      <p class="mb-0"><small>&copy; 2025 Primarias Bunker</small></p>
+      <small>Participación ciudadana por un futuro democrático</small>
+    </footer>
+  </div>
+
+  <script>
+    async function cargarCodigosTelefonicos() {
+      const res = await fetch("https://restcountries.com/v3.1/all");
+      const data = await res.json();
+
+      data.sort((a, b) => a.name.common.localeCompare(b.name.common));
+      data.forEach(p => {
+        const nombre = p.name?.common;
+        const root = p.idd?.root;
+        const sufijos = p.idd?.suffixes;
+
+        if (nombre && root && Array.isArray(sufijos)) {
+          sufijos.forEach(sufijo => {
+            const codigo = (root + sufijo).replace(/\++/g, '+'); // elimina ++
+            const option = new Option(`${nombre} (${codigo})`, codigo, false, false);
+            $('#codigo').append(option);
           });
-          select.select2({ placeholder: "Selecciona un país" });
         }
+      });
 
-        function validarFormulario() {
-          const codigo = document.getElementById('codigo').textContent;
-          const numero = document.getElementById('numero').value.trim();
-          if (!numero.match(/^[0-9]{6,15}$/)) {
-            alert("Número inválido. Verifica el formato.");
-            return false;
-          }
+      $('#codigo').select2({ placeholder: "Selecciona un país", width: '100%' });
+    }
 
-          const campo = document.createElement("input");
-          campo.type = "hidden";
-          campo.name = "numero";
-          campo.value = codigo + numero;
-          document.querySelector("form").appendChild(campo);
-          return true;
+    $(document).ready(() => {
+      cargarCodigosTelefonicos();
+
+      $('form').on('submit', function (e) {
+        const codigo = $('#codigo').val();
+        const numero = $('#numero').val();
+
+        if (!codigo || !numero) {
+          e.preventDefault();
+          alert("Por favor, selecciona un país e ingresa tu número.");
+        } else {
+          $('#numero').val(codigo + numero.replace(/^0+/, ''));  // formatea sin ceros
         }
+      });
+    });
+  </script>
+</body>
+</html>
 
-        $(document).ready(() => {
-          cargarPaises();
-          $('#pais').on('change', function() {
-            const codigo = $(this).val();
-            $('#codigo').text("+" + codigo);
-          });
-        });
-      </script>
-    </body>
-    </html>
-    """
+
+
 
 
 
