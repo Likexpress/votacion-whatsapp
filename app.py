@@ -80,8 +80,7 @@ def votar():
         return "Acceso no válido."
 
     try:
-        numero = serializer.loads(token, max_age=900)  # 900 segundos = 15 minutos
-
+        numero = serializer.loads(token)
     except BadSignature:
         return "Enlace inválido o alterado."
 
@@ -135,7 +134,7 @@ def votar():
         return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 3:
+    if votos_misma_ip >= 10:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
     return render_template("votar.html", numero=numero)
@@ -144,30 +143,34 @@ def votar():
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     if request.method == 'POST':
-        iso_code = request.form.get('pais')  # Ahora es el ISO del país (ej: BO)
+        pais = request.form.get('pais')
         numero_local = request.form.get('numero_local')
 
-        if not iso_code or not numero_local:
+        if not pais or not numero_local:
             return "Por favor, selecciona un país e ingresa tu número."
 
+        # Convertimos nombre de país a región ISO (por ejemplo: "Bolivia" => "BO")
+        nombre_paises = {region: geocoder.description_for_number(
+            phonenumbers.parse(f"+{code[0]}", region), "es"
+        ) for code, regions in COUNTRY_CODE_TO_REGION_CODE.items() for region in regions}
+
+        # Buscamos región ISO por nombre
+        region_code = next((code for code, name in nombre_paises.items() if name.lower() == pais.lower()), None)
+
+        if not region_code:
+            return "País no reconocido."
+
+        # Creamos el número completo
         try:
-            paises_api = requests.get("https://countriesnow.space/api/v0.1/countries/codes").json()
-            codigo_pais = next((p["dial_code"] for p in paises_api["data"] if p["iso2"] == iso_code), None)
+            numero_obj = phonenumbers.parse(numero_local, region_code)
+            numero_formateado = phonenumbers.format_number(numero_obj, PhoneNumberFormat.E164)  # Ej: +59170000000
         except:
-            return "Error al conectar con el servicio de países."
+            return "Número inválido para el país seleccionado."
 
-        if not codigo_pais:
-            return "País no reconocido desde la API."
-
-        numero_local = numero_local.strip()
-        if not numero_local.isdigit():
-            return "El número ingresado debe contener solo dígitos."
-
-        numero_formateado = f"{codigo_pais}{numero_local}"
         token = serializer.dumps(numero_formateado)
         return redirect(f"/votar?token={token}")
 
-    # Formulario
+    # Para el formulario: usamos la API de countriesnow.space
     return """
     <!DOCTYPE html>
     <html lang="es">
@@ -179,6 +182,7 @@ def generar_link():
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
         <style>
             body {
                 background-color: #f4f6f9;
@@ -213,13 +217,10 @@ def generar_link():
 
         <script>
             async function cargarPaises() {
-                const res = await fetch("https://countriesnow.space/api/v0.1/countries/codes");
+                const res = await fetch("https://countriesnow.space/api/v0.1/countries");
                 const data = await res.json();
                 const selectPais = $('#pais');
-                data.data.forEach(p => {
-                    const option = new Option(p.name + " (" + p.dial_code + ")", p.iso2);
-                    selectPais.append(option);
-                });
+                data.data.forEach(p => selectPais.append(new Option(p.country, p.country)));
                 $('#pais').select2({ placeholder: "Selecciona un país", width: '100%' });
             }
 
@@ -230,8 +231,6 @@ def generar_link():
     </body>
     </html>
     """
-
-
 
 
 
