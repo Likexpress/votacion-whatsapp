@@ -5,8 +5,6 @@ from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeSerializer, BadSignature
 import os
 import requests
-from flask import Flask, request, jsonify
-
 # COdigo Funcional
 # ---------------------------
 # Inicialización de la aplicación Flask
@@ -250,67 +248,18 @@ def enviar_voto():
 # ---------------------------
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
-    print("==== Webhook recibido ====")
-    print("FORM DATA:", request.form)
+    sender = request.values.get('From', '')
+    numero = sender.replace("whatsapp:", "").strip()
 
-    user_agent = request.headers.get('User-Agent', '')
-
-    # Filtrar bots automáticos como el de Facebook
-    if 'facebookexternalua' in user_agent.lower():
-        print("🔍 Petición automática detectada, ignorada.")
-        return "OK", 200
-
-    numero = request.form.get('From', '').replace('whatsapp:', '').strip()
-
-    if not numero:
-        print("❌ Número no encontrado o malformado en el webhook.")
-        return "Número no encontrado", 400
-
-    # Crear token cifrado
     token = serializer.dumps(numero)
     link_votacion = f"https://primariasbunker.org/votar?token={token}"
 
-    # Preparar solicitud a la API de 360dialog
-    api_key = os.environ.get("D360_API_KEY")
-    if not api_key:
-        print("❌ API Key no encontrada. Verifica tu variable de entorno D360_API_KEY.")
-        return "Falta la API Key", 500
-
-    api_url = "https://waba-v2.360dialog.io/messages"
-    headers = {
-        "D360-API-KEY": api_key,
-        "Content-Type": "application/json"
-    }
-    body = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": numero,
-        "type": "text",
-        "text": {
-            "body": f"Hola, gracias por participar en este proceso democrático.\n\nHaz clic en el siguiente enlace para emitir tu voto:\n{link_votacion}"
-        }
-    }
-
-    # Mostrar información en consola para depuración
-    print("✅ Enviando mensaje a:", numero)
-    print("🔐 Token generado:", token)
-    print("🔗 Enlace de votación:", link_votacion)
-    print("📤 Payload:", body)
-
-    try:
-        r = requests.post(api_url, headers=headers, json=body)
-        print("📬 Respuesta de 360dialog:", r.status_code, r.text)
-
-        if r.status_code != 200:
-            return f"Error al enviar mensaje: {r.status_code}", 500
-
-    except Exception as e:
-        print("💥 Error al enviar mensaje:", str(e))
-        return "Error interno del servidor", 500
-
-    return "Mensaje enviado correctamente", 200
-
-
+    response = MessagingResponse()
+    msg = response.message()
+    msg.body(f"Hola, gracias por ser parte de este proceso democrático.\n\n"
+             f"Haz clic en el siguiente enlace para emitir tu voto en las Votaciones Primarias Bolivia 2025:\n"
+             f"{link_votacion}")
+    return str(response)
 
 
 # ---------------------------
