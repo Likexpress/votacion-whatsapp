@@ -183,7 +183,6 @@ def generar_link():
         token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
 
-    # HTML renderizado con Jinja2 directamente desde render_template_string
     return render_template_string("""
     <!DOCTYPE html>
     <html lang="es">
@@ -231,7 +230,6 @@ def generar_link():
     </body>
     </html>
     """, paises=paises_codigos)
-
 
 
 
