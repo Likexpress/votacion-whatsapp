@@ -138,7 +138,7 @@ def votar():
 
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
 
-    if votos_misma_ip >= 1:
+    if votos_misma_ip >= 3:
         return f"""
         <!DOCTYPE html>
         <html lang="es">
@@ -225,7 +225,7 @@ def enviar_voto():
     if ip_es_vpn(ip):
         return "Voto denegado. No se permite votar desde una VPN o proxy."
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 1:
+    if votos_misma_ip >= 3:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
     nuevo_voto = Voto(
