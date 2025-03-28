@@ -144,34 +144,30 @@ def votar():
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     if request.method == 'POST':
-        pais = request.form.get('pais')
+        iso_code = request.form.get('pais')  # Ahora es el ISO del país (ej: BO)
         numero_local = request.form.get('numero_local')
 
-        if not pais or not numero_local:
+        if not iso_code or not numero_local:
             return "Por favor, selecciona un país e ingresa tu número."
 
-        # Obtener código telefónico desde countriesnow API
         try:
             paises_api = requests.get("https://countriesnow.space/api/v0.1/countries/codes").json()
-            codigo_pais = next((p["dial_code"] for p in paises_api["data"] if p["name"].lower() == pais.lower()), None)
+            codigo_pais = next((p["dial_code"] for p in paises_api["data"] if p["iso2"] == iso_code), None)
         except:
             return "Error al conectar con el servicio de países."
 
         if not codigo_pais:
             return "País no reconocido desde la API."
 
-        # Validación básica del número
         numero_local = numero_local.strip()
         if not numero_local.isdigit():
             return "El número ingresado debe contener solo dígitos."
 
         numero_formateado = f"{codigo_pais}{numero_local}"
-
-        # Generar token cifrado
         token = serializer.dumps(numero_formateado)
         return redirect(f"/votar?token={token}")
 
-    # Vista GET - mostrar formulario
+    # Formulario
     return """
     <!DOCTYPE html>
     <html lang="es">
@@ -217,10 +213,13 @@ def generar_link():
 
         <script>
             async function cargarPaises() {
-                const res = await fetch("https://countriesnow.space/api/v0.1/countries");
+                const res = await fetch("https://countriesnow.space/api/v0.1/countries/codes");
                 const data = await res.json();
                 const selectPais = $('#pais');
-                data.data.forEach(p => selectPais.append(new Option(p.country, p.country)));
+                data.data.forEach(p => {
+                    const option = new Option(p.name + " (" + p.dial_code + ")", p.iso2);
+                    selectPais.append(option);
+                });
                 $('#pais').select2({ placeholder: "Selecciona un país", width: '100%' });
             }
 
