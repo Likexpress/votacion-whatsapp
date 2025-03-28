@@ -132,6 +132,7 @@ def votar():
     x_forwarded_for = request.headers.get('X-Forwarded-For')
     ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.remote_addr
 
+
     if ip_es_vpn(ip):
         return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
@@ -156,7 +157,9 @@ def enviar_voto():
     anio = request.form.get('anio_nacimiento')
     lat = request.form.get('latitud')
     lon = request.form.get('longitud')
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    x_forwarded_for = request.headers.get('X-Forwarded-For')
+    ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.remote_addr
+
 
     if not numero:
         return "Error: el número de WhatsApp es obligatorio."
