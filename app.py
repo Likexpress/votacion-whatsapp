@@ -45,63 +45,6 @@ class Voto(db.Model):
 with app.app_context():
     db.create_all()
 
-
-
-@app.route('/webhook', methods=['GET', 'POST'])
-def webhook():
-    if request.method == 'GET':
-        VERIFY_TOKEN = os.environ.get("META_VERIFY_TOKEN", "Likexpress-000")
-        mode = request.args.get("hub.mode")
-        token = request.args.get("hub.verify_token")
-        challenge = request.args.get("hub.challenge")
-
-        if mode and token and mode == "subscribe" and token == VERIFY_TOKEN:
-            return challenge, 200
-        return "Unauthorized", 403
-
-    if request.method == 'POST':
-        data = request.get_json()
-        try:
-            mensaje = data['entry'][0]['changes'][0]['value']['messages'][0]
-            numero = mensaje['from']
-            nombre_usuario = mensaje['profile']['name']
-            
-            # Enviar el link de votación
-            token = serializer.dumps(numero)
-            link = f"https://primariasbunker.org/votar?token={token}"
-            texto = f"Hola {nombre_usuario}, gracias por ser parte de este proceso democrático.\nHaz clic aquí para votar:\n{link}"
-            enviar_mensaje(numero, texto)
-
-        except Exception as e:
-            print("No es un mensaje válido o falta información:", e)
-
-        return "EVENT_RECEIVED", 200
-
-
-
-def enviar_mensaje(numero, texto):
-    token = os.environ.get("EAAOUTzqle6gBO1skEGbSLXeJJeztQSqIS80JyFJgbofmsKGr4pcCoJx1RLvYIEEZBlMe5MXdaJ7UneZAz2GOEFlBLZC3QhrqXZAebWmu3oqMQPhdhrf851ZB1Fix9bWSSXVeUAbD0TbueMejDPd9ZCQXK8jNbl9VGhZCUZBmAr7GkaxIDpAtK0l0gR73hNzcIOUl3gZAS53pyR4dOnbZCNxBJ5diud")
-    phone_number_id = os.environ.get("559032883967513")
-
-    url = f"https://graph.facebook.com/v18.0/{phone_number_id}/messages"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": numero,
-        "type": "text",
-        "text": {
-            "body": texto
-        }
-    }
-    response = requests.post(url, headers=headers, json=payload)
-    print("Meta respuesta:", response.status_code, response.text)
-
-
-
-
 # ---------------------------
 # Función para verificar IP con IPQualityScore
 # ---------------------------
