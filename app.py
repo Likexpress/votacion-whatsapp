@@ -253,7 +253,13 @@ def whatsapp_reply():
     print("==== Webhook recibido ====")
     print("FORM DATA:", request.form)
 
-    # Extraer el número desde el campo 'From'
+    user_agent = request.headers.get('User-Agent', '')
+
+    # Filtrar bots automáticos como el de Facebook
+    if 'facebookexternalua' in user_agent.lower():
+        print("🔍 Petición automática detectada, ignorada.")
+        return "OK", 200
+
     numero = request.form.get('From', '').replace('whatsapp:', '').strip()
 
     if not numero:
