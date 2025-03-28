@@ -80,7 +80,8 @@ def votar():
         return "Acceso no válido."
 
     try:
-        numero = serializer.loads(token)
+        numero = serializer.loads(token, max_age=900)  # 900 segundos = 15 minutos
+
     except BadSignature:
         return "Enlace inválido o alterado."
 
@@ -134,7 +135,7 @@ def votar():
         return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 10:
+    if votos_misma_ip >= 3:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
     return render_template("votar.html", numero=numero)
