@@ -5,6 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeSerializer, BadSignature
 import os
 import requests
+from flask import Flask, request, jsonify
+
 # COdigo Funcional
 # ---------------------------
 # Inicialización de la aplicación Flask
@@ -248,18 +250,42 @@ def enviar_voto():
 # ---------------------------
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
-    sender = request.values.get('From', '')
-    numero = sender.replace("whatsapp:", "").strip()
+    data = request.get_json()
+    print("Mensaje recibido:", data)
 
+    # Verifica si es un mensaje entrante
+    if not data or 'messages' not in data or not data['messages']:
+        return "Sin mensajes", 200
+
+    message = data['messages'][0]
+    numero = message['from']  # número del remitente en formato internacional (ej. 59167965681)
+
+    # Generar link cifrado
     token = serializer.dumps(numero)
     link_votacion = f"https://primariasbunker.org/votar?token={token}"
 
-    response = MessagingResponse()
-    msg = response.message()
-    msg.body(f"Hola, gracias por ser parte de este proceso democrático.\n\n"
-             f"Haz clic en el siguiente enlace para emitir tu voto en las Votaciones Primarias Bolivia 2025:\n"
-             f"{link_votacion}")
-    return str(response)
+    # Enviar respuesta con 360dialog API
+    api_url = "https://waba.360dialog.io/v1/messages"
+    headers = {
+        "D360-API-KEY": os.environ.get("D360_API_KEY"),  # asegúrate de definir esto en Render
+        "Content-Type": "application/json"
+    }
+    body = {
+        "recipient_type": "individual",
+        "to": numero,
+        "type": "text",
+        "text": {
+            "body": f"Hola, gracias por participar en este proceso democrático.\n\nHaz clic en el siguiente enlace para emitir tu voto:\n{link_votacion}"
+        }
+    }
+
+    try:
+        r = requests.post(api_url, headers=headers, json=body)
+        print("Respuesta 360dialog:", r.status_code, r.text)
+    except Exception as e:
+        print("Error al enviar mensaje:", e)
+
+    return "OK", 200
 
 
 # ---------------------------
