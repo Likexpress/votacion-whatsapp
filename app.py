@@ -308,110 +308,90 @@ def crear_tabla_voto():
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     if request.method == 'POST':
-        codigo = request.form.get('codigo')
+        pais = request.form.get('pais')
         numero = request.form.get('numero')
 
-        if not codigo or not numero:
+        if not pais or not numero:
             return "Por favor, selecciona un país e ingresa tu número."
 
-        numero_completo = codigo + numero
+        # Limpieza del número (quita espacios y guiones)
+        numero = numero.replace(" ", "").replace("-", "")
+
+        if not pais.startswith("+"):
+            return "El formato del código de país es incorrecto."
+
+        numero_completo = pais + numero
+
         token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
-
-    return render_template("generar_link.html")
-
 
     return """
     <!DOCTYPE html>
     <html lang="es">
     <head>
-      <meta charset="UTF-8">
-      <title>Iniciar Votación</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-      <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-      <style>
-        body {
-          background-color: #f4f6f9;
-          padding-top: 60px;
-        }
-        .form-wrapper {
-          max-width: 500px;
-          margin: auto;
-          padding: 30px;
-          background: #fff;
-          border-radius: 10px;
-          box-shadow: 0 0 10px rgba(0,0,0,0.06);
-        }
-        .logo {
-          max-width: 100px;
-          margin: 0 auto 10px;
-          display: block;
-        }
-        footer {
-          text-align: center;
-          margin-top: 30px;
-          font-size: 0.9rem;
-          color: #6c757d;
-        }
-      </style>
+        <meta charset="UTF-8">
+        <title>Inicio de Votación</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body {
+                background-color: #f8f9fa;
+                padding-top: 60px;
+                font-family: Arial, sans-serif;
+            }
+            .card {
+                max-width: 500px;
+                margin: auto;
+                padding: 30px;
+                border-radius: 10px;
+                background: #fff;
+                box-shadow: 0 0 15px rgba(0,0,0,0.06);
+            }
+            .logo {
+                width: 150px;
+                margin-bottom: 20px;
+            }
+            footer {
+                text-align: center;
+                font-size: 0.9rem;
+                color: #777;
+                margin-top: 40px;
+            }
+        </style>
     </head>
     <body>
-      <div class="form-wrapper">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" class="logo" alt="Logo Bunker">
-        <h3 class="text-center mb-3">¡Bienvenido a las Votaciones Primarias 2025!</h3>
-        <p class="text-center text-muted mb-4">
-          Para comenzar, selecciona tu país e ingresa tu número de WhatsApp.<br>Recuerda que solo puedes votar una vez por número.
-        </p>
-        <form method="POST">
-          <div class="mb-3">
-            <label for="codigo" class="form-label">País</label>
-            <select id="codigo" name="codigo" class="form-select" required></select>
-          </div>
-          <div class="mb-3">
-            <label for="numero" class="form-label">Número de WhatsApp</label>
-            <input type="text" class="form-control" id="numero" name="numero" placeholder="70000000" required>
-          </div>
-          <div class="d-grid">
-            <button type="submit" class="btn btn-primary">Generar enlace de votación</button>
-          </div>
-        </form>
-      </div>
-
-      <footer>
-        <hr>
-        <p class="mb-0">&copy; 2025 Primarias Bunker</p>
-        <small>Participación ciudadana por un futuro democrático</small>
-      </footer>
-
-      <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-      <script>
-        async function cargarCodigos() {
-          const res = await fetch("https://restcountries.com/v3.1/all");
-          const data = await res.json();
-          const select = $('#codigo');
-          data.sort((a, b) => a.name.common.localeCompare(b.name.common));
-          data.forEach(p => {
-            const nombre = p.name.common;
-            const root = p.idd?.root || '';
-            const sufijo = p.idd?.suffixes?.[0] || '';
-            const codigo = (root + sufijo).replace(/\++/g, '+');
-            if (codigo) {
-              const option = new Option(`${nombre} (${codigo})`, codigo, false, false);
-              select.append(option);
-            }
-          });
-          select.select2({ placeholder: "Selecciona un país", width: '100%' });
-        }
-
-        $(document).ready(() => {
-          cargarCodigos();
-        });
-      </script>
+        <div class="card text-center">
+            <img src="/static/logo.png" class="logo" alt="Logo Bunker">
+            <h3><strong>¡Bienvenido a las Votaciones Primarias 2025!</strong></h3>
+            <p class="text-muted">Para comenzar, selecciona tu país e ingresa tu número de WhatsApp. Recuerda que solo puedes votar una vez por número.</p>
+            <form method="POST">
+                <div class="mb-3 text-start">
+                    <label for="pais" class="form-label">País</label>
+                    <select name="pais" id="pais" class="form-select" required>
+                        <option value="">Selecciona un país</option>
+                        <option value="+591">Bolivia (+591)</option>
+                        <option value="+54">Argentina (+54)</option>
+                        <option value="+56">Chile (+56)</option>
+                        <option value="+51">Perú (+51)</option>
+                        <option value="+1">Estados Unidos (+1)</option>
+                        <option value="+34">España (+34)</option>
+                    </select>
+                </div>
+                <div class="mb-3 text-start">
+                    <label for="numero" class="form-label">Número de WhatsApp</label>
+                    <input type="text" name="numero" id="numero" class="form-control" placeholder="Ej: 70000000" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Obtener enlace de votación</button>
+            </form>
+        </div>
+        <footer class="mt-4">
+            &copy; 2025 Primarias Bunker<br>
+            <small>Participación ciudadana por un futuro democrático</small>
+        </footer>
     </body>
     </html>
-    """  
+    """
+
 
 
 
