@@ -250,15 +250,12 @@ def enviar_voto():
 # ---------------------------
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
-    data = request.get_json()
-    print("Mensaje recibido:", data)
+    from_number = request.form.get('from')
+    print("Mensaje recibido de:", from_number)
 
-    # Verifica si es un mensaje entrante
-    if not data or 'messages' not in data or not data['messages']:
-        return "Sin mensajes", 200
+    if not from_number:
+        return "Sin número de remitente", 200
 
-    message = data['messages'][0]
-    numero = message['from']  # número del remitente en formato internacional (ej. 59167965681)
 
     # Generar link cifrado
     token = serializer.dumps(numero)
