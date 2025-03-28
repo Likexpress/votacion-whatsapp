@@ -9,6 +9,7 @@ from phonenumbers import COUNTRY_CODE_TO_REGION_CODE
 from flask import Flask, request, redirect
 from itsdangerous import URLSafeSerializer
 from phonenumbers import COUNTRY_CODE_TO_REGION_CODE, geocoder
+from flask import Flask, request, redirect, render_template_string
 
 
 # --- Configuración base ---
@@ -160,7 +161,9 @@ def obtener_lista_paises():
 
 
 
-# --- Ruta principal de generación de enlace ---
+# ---------------------------
+# Ruta para generar link de votación
+# ---------------------------
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     paises_codigos = obtener_lista_paises()
@@ -180,10 +183,8 @@ def generar_link():
         token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
 
-    # HTML del formulario (Bootstrap + dinámico)
-    opciones = "".join([f'<option value="{pais}">{pais} ({codigo})</option>' for pais, codigo in paises_codigos.items()])
-
-    return f"""
+    # HTML renderizado con Jinja2 directamente desde render_template_string
+    return render_template_string("""
     <!DOCTYPE html>
     <html lang="es">
     <head>
@@ -192,18 +193,18 @@ def generar_link():
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
-            body {{
+            body {
                 background-color: #f4f6f9;
                 padding-top: 80px;
-            }}
-            .card {{
+            }
+            .card {
                 max-width: 500px;
                 margin: auto;
                 padding: 30px;
                 border-radius: 10px;
                 background: #fff;
                 box-shadow: 0 0 12px rgba(0,0,0,0.06);
-            }}
+            }
         </style>
     </head>
     <body>
@@ -215,7 +216,9 @@ def generar_link():
                     <label class="form-label">País</label>
                     <select name="pais" class="form-select" required>
                         <option value="">Selecciona un país</option>
-                        {opciones}
+                        {% for pais, codigo in paises.items() %}
+                            <option value="{{ pais }}">{{ pais }} ({{ codigo }})</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="mb-3 text-start">
@@ -227,7 +230,7 @@ def generar_link():
         </div>
     </body>
     </html>
-    """
+    """, paises=paises_codigos)
 
 
 
