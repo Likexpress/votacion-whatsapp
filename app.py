@@ -308,91 +308,116 @@ def crear_tabla_voto():
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     if request.method == 'POST':
-        codigo_pais = request.form.get('codigo_pais', '').strip().replace('+', '')
-        numero = request.form.get('numero', '').strip().replace('+', '')
+        numero = request.form.get('numero')
+        if not numero:
+            return "Por favor, ingresa tu número de WhatsApp."
 
-        if not codigo_pais or not numero:
-            return "Por favor, selecciona un país e ingresa tu número."
+        if not numero.startswith('+'):
+            return "El número debe estar en formato internacional, por ejemplo: +59170000000"
 
-        numero_final = f"+{codigo_pais}{numero}"
-        token = serializer.dumps(numero_final)
+        token = serializer.dumps(numero)
         return redirect(f"/votar?token={token}")
-
-    return render_template("generar_link.html")
-
 
     return """
     <!DOCTYPE html>
     <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>Iniciar Votación</title>
+        <title>Inicio de votación</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <style>
             body {
-                background-color: #f8f9fa;
-                padding-top: 80px;
+                background-color: #f4f6f9;
+                padding-top: 60px;
             }
-            .card {
+            .form-wrapper {
                 max-width: 500px;
                 margin: auto;
+                background: #fff;
                 padding: 30px;
                 border-radius: 10px;
-                background: #fff;
-                box-shadow: 0 0 12px rgba(0,0,0,0.06);
+                box-shadow: 0 0 12px rgba(0,0,0,0.08);
             }
             .logo {
-                max-width: 120px;
+                max-width: 90px;
+                margin: 0 auto 15px;
+                display: block;
             }
         </style>
     </head>
     <body>
-        <div class="card text-center">
-            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo mx-auto d-block mb-3">
-            <h3>Iniciar votación</h3>
-            <p class="text-muted">Selecciona tu país e ingresa tu número de WhatsApp para generar tu enlace único de votación.</p>
-
-            <form method="POST">
-                <div class="mb-3 text-start">
-                    <label for="codigo_pais" class="form-label">País</label>
-                    <select id="codigo_pais" name="codigo_pais" class="form-select" required></select>
+        <div class="form-wrapper text-center">
+            <img src="/static/img/logo.png" class="logo" alt="Logo">
+            <h4 class="mb-3">Inicio de Votación</h4>
+            <p class="text-muted">Selecciona tu país e ingresa tu número de WhatsApp para obtener tu enlace único de votación.</p>
+            <form method="POST" class="text-start">
+                <div class="mb-3">
+                    <label for="pais" class="form-label">País:</label>
+                    <select id="pais" class="form-select" required></select>
                 </div>
-                <div class="mb-3 text-start">
-                    <label for="numero" class="form-label">Número de WhatsApp (sin código del país)</label>
-                    <input type="text" name="numero" class="form-control" placeholder="70000000" required>
+                <div class="mb-3">
+                    <label for="numero" class="form-label">Número de WhatsApp:</label>
+                    <input type="tel" id="numero" class="form-control" placeholder="Ej: 70000000" required>
                 </div>
+                <input type="hidden" name="numero" id="numeroFinal">
                 <button type="submit" class="btn btn-primary w-100">Generar enlace</button>
             </form>
         </div>
 
+        <footer class="text-center text-muted mt-5">
+            <hr>
+            <p class="mb-0">&copy; 2025 Primarias Bunker</p>
+            <small>Participación ciudadana por un futuro democrático</small>
+        </footer>
+
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
-            $(document).ready(function() {
-                $('#codigo_pais').select2({ width: '100%' });
+            $(document).ready(() => {
+                $('#pais').select2({ placeholder: "Seleccione un país", width: '100%' });
+
+                // Cargar países con código
                 fetch("https://restcountries.com/v3.1/all")
                     .then(res => res.json())
                     .then(data => {
                         const paises = data
-                            .filter(p => p.idd && p.idd.root)
                             .map(p => ({
                                 nombre: p.translations?.spa?.common || p.name.common,
-                                codigo: `${p.idd.root || ''}${(p.idd.suffixes || [''])[0] || ''}`
+                                codigo: p.idd?.root + (p.idd?.suffixes?.[0] || "")
                             }))
+                            .filter(p => p.codigo && p.nombre)
                             .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-                        paises.forEach(pais => {
-                            $('#codigo_pais').append(
-                                new Option(`${pais.nombre} (${pais.codigo})`, pais.codigo)
-                            );
-                        });
+                        for (let pais of paises) {
+                            const option = new Option(`${pais.nombre} (${pais.codigo})`, pais.codigo, false, false);
+                            $('#pais').append(option);
+                        }
+
+                        $('#pais').trigger('change');
                     });
+
+                // Validación y armado del número final
+                $('form').on('submit', function (e) {
+                    const codigo = $('#pais').val();
+                    const numero = $('#numero').val().replace(/[^0-9]/g, '');
+
+                    if (!codigo || !numero) {
+                        e.preventDefault();
+                        alert("Por favor, selecciona un país e ingresa tu número.");
+                        return;
+                    }
+
+                    const numeroFinal = (codigo + numero).replace(/^\+*/, '+');
+                    $('#numeroFinal').val(numeroFinal);
+                });
             });
         </script>
     </body>
     </html>
+    """
+
 
 
 
