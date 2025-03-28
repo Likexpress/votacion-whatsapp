@@ -251,17 +251,22 @@ def enviar_voto():
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
     print("==== Webhook recibido ====")
-    print("FORM DATA:", request.form)   # 🔍 Nuevo: imprime todo lo que llega
+    print("FORM DATA:", request.form)
 
-    from_number = request.form.get('from')  # Si este es None, buscamos el campo correcto
+    from_number = request.form.get('From')  # <-- CAMBIO AQUÍ
     print("Número extraído:", from_number)
 
     if not from_number:
         return "Sin número de remitente", 200
 
-    token = serializer.dumps(from_number)
+    # Extraer número limpio (sin 'whatsapp:')
+    numero = from_number.replace("whatsapp:", "").strip()
+
+    # Generar link cifrado
+    token = serializer.dumps(numero)
     link_votacion = f"https://primariasbunker.org/votar?token={token}"
 
+    # Enviar respuesta usando la API 360dialog (WhatsApp Business API)
     api_url = "https://waba.360dialog.io/v1/messages"
     headers = {
         "D360-API-KEY": os.environ.get("D360_API_KEY"),
@@ -269,10 +274,11 @@ def whatsapp_reply():
     }
     body = {
         "recipient_type": "individual",
-        "to": from_number,
+        "to": numero,
         "type": "text",
         "text": {
-            "body": f"Hola, gracias por participar en este proceso democrático.\n\nHaz clic en el siguiente enlace para emitir tu voto:\n{link_votacion}"
+            "body": f"Hola, gracias por participar en este proceso democrático.\n\n"
+                    f"Haz clic en el siguiente enlace para emitir tu voto:\n{link_votacion}"
         }
     }
 
@@ -283,6 +289,7 @@ def whatsapp_reply():
         print("Error al enviar mensaje:", e)
 
     return "OK", 200
+
 
 
 
