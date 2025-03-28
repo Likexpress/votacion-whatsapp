@@ -135,6 +135,58 @@ def votar():
 
     return render_template("votar.html", numero=numero)
 
+
+@app.route('/generar_link', methods=['GET', 'POST'])
+def generar_link():
+    if request.method == 'POST':
+        numero = request.form.get('numero')
+        if not numero:
+            return "Por favor, ingresa tu número de WhatsApp."
+        
+        if not numero.startswith('+'):
+            return "El número debe tener el formato internacional, por ejemplo: +59170000000"
+
+        token = serializer.dumps(numero)
+        return redirect(f"/votar?token={token}")
+
+    return """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Iniciar Votación</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body {
+                background-color: #f8f9fa;
+                padding-top: 80px;
+            }
+            .card {
+                max-width: 500px;
+                margin: auto;
+                padding: 30px;
+                border-radius: 10px;
+                background: #fff;
+                box-shadow: 0 0 12px rgba(0,0,0,0.06);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card text-center">
+            <h3>Inicio de votación</h3>
+            <p class="text-muted">Ingresa tu número de WhatsApp para obtener tu enlace único de votación.</p>
+            <form method="POST">
+                <input type="text" name="numero" class="form-control mb-3" placeholder="+59170000000" required>
+                <button type="submit" class="btn btn-primary w-100">Generar enlace</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    """
+
+
+
 # ---------------------------
 # Procesar el voto
 # ---------------------------
