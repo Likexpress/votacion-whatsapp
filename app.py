@@ -6,9 +6,14 @@ import os
 import requests
 import phonenumbers
 from phonenumbers import COUNTRY_CODE_TO_REGION_CODE
+from flask import Flask, request, redirect
+from itsdangerous import URLSafeSerializer
+from phonenumbers import COUNTRY_CODE_TO_REGION_CODE, geocoder
 
 
-
+# --- Configuración base ---
+app = Flask(__name__)
+serializer = URLSafeSerializer("clave-secreta")
 # COdigo Funcional
 # ---------------------------
 # Inicialización de la aplicación Flask
@@ -140,19 +145,22 @@ def votar():
     return render_template("votar.html", numero=numero)
 
 
+# --- Función para obtener país + código ---
 def obtener_lista_paises():
     paises = {}
-    for codigo, regiones in COUNTRY_CODE_TO_REGION_CODE.items():
-        for region in regiones:
-            nombre = phonenumbers.geocoder.country_name_for_number(
-                phonenumbers.parse(f"+{codigo}", region), "es"
-            )
-            if nombre and nombre not in paises:
-                paises[nombre] = f"+{codigo}"
+    for code, regions in COUNTRY_CODE_TO_REGION_CODE.items():
+        for region in regions:
+            try:
+                nombre = geocoder.description_for_number(phonenumbers.parse(f"+{code}", region), "es")
+                if nombre and nombre not in paises:
+                    paises[nombre] = f"+{code}"
+            except:
+                continue
     return dict(sorted(paises.items()))
 
 
 
+# --- Ruta principal de generación de enlace ---
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     paises_codigos = obtener_lista_paises()
@@ -172,7 +180,8 @@ def generar_link():
         token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
 
-    opciones_html = "".join([f'<option value="{pais}">{pais} ({codigo})</option>' for pais, codigo in paises_codigos.items()])
+    # HTML del formulario (Bootstrap + dinámico)
+    opciones = "".join([f'<option value="{pais}">{pais} ({codigo})</option>' for pais, codigo in paises_codigos.items()])
 
     return f"""
     <!DOCTYPE html>
@@ -206,7 +215,7 @@ def generar_link():
                     <label class="form-label">País</label>
                     <select name="pais" class="form-select" required>
                         <option value="">Selecciona un país</option>
-                        {opciones_html}
+                        {opciones}
                     </select>
                 </div>
                 <div class="mb-3 text-start">
