@@ -314,16 +314,17 @@ def generar_link():
         if not pais or not numero:
             return "Por favor, selecciona un país e ingresa tu número."
 
-        # Limpieza del número (quita espacios y guiones)
         numero = numero.replace(" ", "").replace("-", "")
 
         if not pais.startswith("+"):
             return "El formato del código de país es incorrecto."
 
         numero_completo = pais + numero
-
         token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
+
+    return render_template("generar_link.html", paises=PAISES_CODIGOS)
+
 
     return """
     <!DOCTYPE html>
@@ -362,7 +363,7 @@ def generar_link():
     <body>
         <div class="card text-center">
             <div class="text-center mb-4">
-              <img src="/static/img/logo.png" alt="Logo Bunker" style="max-width: 180px;">
+              <img src="/static/img/logo.png" alt="Logo Bunker" class="logo">
             </div>
 
             <h3><strong>¡Bienvenido a las Votaciones Primarias 2025!</strong></h3>
@@ -372,12 +373,9 @@ def generar_link():
                     <label for="pais" class="form-label">País</label>
                     <select name="pais" id="pais" class="form-select" required>
                         <option value="">Selecciona un país</option>
-                        <option value="+591">Bolivia (+591)</option>
-                        <option value="+54">Argentina (+54)</option>
-                        <option value="+56">Chile (+56)</option>
-                        <option value="+51">Perú (+51)</option>
-                        <option value="+1">Estados Unidos (+1)</option>
-                        <option value="+34">España (+34)</option>
+                        {% for nombre, codigo in paises.items() %}
+                            <option value="{{ codigo }}">{{ nombre }} ({{ codigo }})</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="mb-3 text-start">
@@ -393,6 +391,7 @@ def generar_link():
         </footer>
     </body>
     </html>
+
     """
 
 
