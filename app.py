@@ -250,8 +250,11 @@ def enviar_voto():
 # ---------------------------
 @app.route('/whatsapp', methods=['POST'])
 def whatsapp_reply():
-    from_number = request.form.get('from')
-    print("Mensaje recibido de:", from_number)
+    print("==== Webhook recibido ====")
+    print("FORM DATA:", request.form)   # 🔍 Nuevo: imprime todo lo que llega
+
+    from_number = request.form.get('from')  # Si este es None, buscamos el campo correcto
+    print("Número extraído:", from_number)
 
     if not from_number:
         return "Sin número de remitente", 200
