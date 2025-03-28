@@ -134,7 +134,7 @@ def votar():
         return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 10:
+    if votos_misma_ip >= 1:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
     return render_template("votar.html", numero=numero)
@@ -178,7 +178,7 @@ def enviar_voto():
     if ip_es_vpn(ip):
         return "Voto denegado. No se permite votar desde una VPN o proxy."
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 10:
+    if votos_misma_ip >= 1:
         return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
     nuevo_voto = Voto(
@@ -303,30 +303,7 @@ def crear_tabla_voto():
         return f"Error al crear la tabla: {str(e)}"
 
 
-def validar_numero_telefonico(numero):
-    try:
-        parsed = phonenumbers.parse(numero, None)
-        es_valido = phonenumbers.is_valid_number(parsed)
-        es_posible = phonenumbers.is_possible_number(parsed)
-        pais = geocoder.country_name_for_number(parsed, "es")
-        compania = carrier.name_for_number(parsed, "es")
 
-        return {
-            "valido": es_valido,
-            "posible": es_posible,
-            "pais": pais,
-            "compañia": compania
-        }
-    except phonenumbers.NumberParseException:
-        return {
-            "valido": False,
-            "posible": False,
-            "pais": None,
-            "compañia": None
-        }
-
-# Ejemplo
-print(validar_numero_telefonico("+59167965681"))
 
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
@@ -347,63 +324,113 @@ def generar_link():
 
     opciones = ''.join([f"<option value='{p}'>{p}</option>" for p in PAISES_CODIGOS.keys()])
 
-    return f"""
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>Iniciar Votación</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-        <style>
-            body {{
-                background-color: #f4f6f9;
-                padding-top: 80px;
-            }}
-            .card {{
-                max-width: 500px;
-                margin: auto;
-                padding: 30px;
-                border-radius: 10px;
-                background: #fff;
-                box-shadow: 0 0 12px rgba(0,0,0,0.06);
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="card text-center">
-            <h3>Inicio de votación</h3>
-            <p class="text-muted">Selecciona tu país e ingresa tu número local de WhatsApp.</p>
-            <form method="POST">
-                <div class="mb-3 text-start">
-                    <label class="form-label">País</label>
-                    <select name="pais" id="selectPais" class="form-select" required>
-                        <option value="">Selecciona un país</option>
-                        {opciones}
-                    </select>
-                </div>
-                <div class="mb-3 text-start">
-                    <label class="form-label">Número (sin código)</label>
-                    <input type="tel" name="numero_local" class="form-control" placeholder="Ej: 70000000" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Generar enlace</button>
-            </form>
+return """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Iniciar Votación - Primarias Bunker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f4f6f9;
+      padding-top: 60px;
+    }
+    .card {
+      max-width: 550px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 0 15px rgba(0,0,0,0.06);
+    }
+    .logo {
+      width: 100px;
+      margin: 0 auto 20px;
+      display: block;
+    }
+    .select2-container .select2-selection--single {
+      height: 38px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card text-center">
+    <img src="/static/img/logo.png" alt="Primarias Bunker" class="logo">
+    <h3 class="mb-3">Participa en las Elecciones Primarias 2025</h3>
+    <p class="text-muted">
+      Para emitir tu voto, selecciona tu país y número de WhatsApp. Este paso nos permite generar un enlace único para garantizar que cada persona vote solo una vez.
+    </p>
+    <form method="POST" onsubmit="return validarFormulario()">
+      <div class="mb-3 text-start">
+        <label for="pais" class="form-label">País</label>
+        <select id="pais" class="form-select" required></select>
+      </div>
+      <div class="mb-3 text-start">
+        <label for="numero" class="form-label">Número de WhatsApp</label>
+        <div class="input-group">
+          <span class="input-group-text" id="codigo">+000</span>
+          <input type="tel" id="numero" class="form-control" placeholder="Ej. 70000000" required>
         </div>
+        <small class="text-muted">Ingresa tu número sin el código del país</small>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Generar Enlace de Votación</button>
+    </form>
+    <hr class="my-4">
+    <footer class="text-muted small">
+      &copy; 2025 Primarias Bunker<br>
+      Participación ciudadana por un futuro democrático
+    </footer>
+  </div>
 
-        <script>
-            $(document).ready(function() {{
-                $('#selectPais').select2({{
-                    placeholder: "Selecciona tu país",
-                    width: '100%'
-                }});
-            }});
-        </script>
-    </body>
-    </html>
-    """
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    let paises = [];
+
+    async function cargarPaises() {
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/codes");
+      const data = await res.json();
+      paises = data.data;
+      const select = $('#pais');
+      select.append('<option value="">Selecciona un país</option>');
+      paises.forEach(p => {
+        select.append(new Option(p.name + ' (+' + p.dial_code + ')', p.dial_code));
+      });
+      select.select2({ placeholder: "Selecciona un país" });
+    }
+
+    function validarFormulario() {
+      const codigo = document.getElementById('codigo').textContent;
+      const numero = document.getElementById('numero').value.trim();
+      if (!numero.match(/^[0-9]{6,15}$/)) {
+        alert("Número inválido. Por favor, verifica el formato.");
+        return false;
+      }
+
+      const campo = document.createElement("input");
+      campo.type = "hidden";
+      campo.name = "numero";
+      campo.value = codigo + numero;
+      document.querySelector("form").appendChild(campo);
+      return true;
+    }
+
+    $(document).ready(() => {
+      cargarPaises();
+      $('#pais').on('change', function() {
+        const codigo = $(this).val();
+        $('#codigo').text("+" + codigo);
+      });
+    });
+  </script>
+</body>
+</html>
+"""
+
+
 
 
 PAISES_CODIGOS = {
