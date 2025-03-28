@@ -256,20 +256,17 @@ def whatsapp_reply():
     if not from_number:
         return "Sin número de remitente", 200
 
-
-    # Generar link cifrado
-    token = serializer.dumps(numero)
+    token = serializer.dumps(from_number)
     link_votacion = f"https://primariasbunker.org/votar?token={token}"
 
-    # Enviar respuesta con 360dialog API
     api_url = "https://waba.360dialog.io/v1/messages"
     headers = {
-        "D360-API-KEY": os.environ.get("D360_API_KEY"),  # asegúrate de definir esto en Render
+        "D360-API-KEY": os.environ.get("D360_API_KEY"),
         "Content-Type": "application/json"
     }
     body = {
         "recipient_type": "individual",
-        "to": numero,
+        "to": from_number,
         "type": "text",
         "text": {
             "body": f"Hola, gracias por participar en este proceso democrático.\n\nHaz clic en el siguiente enlace para emitir tu voto:\n{link_votacion}"
@@ -283,6 +280,7 @@ def whatsapp_reply():
         print("Error al enviar mensaje:", e)
 
     return "OK", 200
+
 
 
 # ---------------------------
