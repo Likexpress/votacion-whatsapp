@@ -4,7 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeSerializer, BadSignature
 import os
 import requests
-
+import phonenumbers
+from phonenumbers import COUNTRY_CODE_TO_REGION_CODE
 
 
 
@@ -139,20 +140,41 @@ def votar():
     return render_template("votar.html", numero=numero)
 
 
+def obtener_lista_paises():
+    paises = {}
+    for codigo, regiones in COUNTRY_CODE_TO_REGION_CODE.items():
+        for region in regiones:
+            nombre = phonenumbers.geocoder.country_name_for_number(
+                phonenumbers.parse(f"+{codigo}", region), "es"
+            )
+            if nombre and nombre not in paises:
+                paises[nombre] = f"+{codigo}"
+    return dict(sorted(paises.items()))
+
+
+
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
-    if request.method == 'POST':
-        numero = request.form.get('numero')
-        if not numero:
-            return "Por favor, ingresa tu número de WhatsApp."
-        
-        if not numero.startswith('+'):
-            return "El número debe tener el formato internacional, por ejemplo: +59170000000"
+    paises_codigos = obtener_lista_paises()
 
-        token = serializer.dumps(numero)
+    if request.method == 'POST':
+        pais = request.form.get('pais')
+        numero = request.form.get('numero')
+
+        if not pais or not numero:
+            return "Por favor, selecciona un país e ingresa tu número."
+
+        codigo = paises_codigos.get(pais)
+        if not codigo:
+            return "País no reconocido."
+
+        numero_completo = f"{codigo}{numero}"
+        token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
 
-    return """
+    opciones_html = "".join([f'<option value="{pais}">{pais} ({codigo})</option>' for pais, codigo in paises_codigos.items()])
+
+    return f"""
     <!DOCTYPE html>
     <html lang="es">
     <head>
@@ -161,32 +183,43 @@ def generar_link():
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
-            body {
-                background-color: #f8f9fa;
+            body {{
+                background-color: #f4f6f9;
                 padding-top: 80px;
-            }
-            .card {
+            }}
+            .card {{
                 max-width: 500px;
                 margin: auto;
                 padding: 30px;
                 border-radius: 10px;
                 background: #fff;
                 box-shadow: 0 0 12px rgba(0,0,0,0.06);
-            }
+            }}
         </style>
     </head>
     <body>
         <div class="card text-center">
             <h3>Inicio de votación</h3>
-            <p class="text-muted">Ingresa tu número de WhatsApp para obtener tu enlace único de votación.</p>
+            <p class="text-muted">Selecciona tu país e ingresa tu número local:</p>
             <form method="POST">
-                <input type="text" name="numero" class="form-control mb-3" placeholder="+59170000000" required>
+                <div class="mb-3 text-start">
+                    <label class="form-label">País</label>
+                    <select name="pais" class="form-select" required>
+                        <option value="">Selecciona un país</option>
+                        {opciones_html}
+                    </select>
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Número de WhatsApp (sin código)</label>
+                    <input type="tel" name="numero" class="form-control" placeholder="Ej: 70000000" required>
+                </div>
                 <button type="submit" class="btn btn-primary w-100">Generar enlace</button>
             </form>
         </div>
     </body>
     </html>
     """
+
 
 
 
