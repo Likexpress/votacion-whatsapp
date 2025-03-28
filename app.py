@@ -312,29 +312,19 @@ def generar_link():
         if not pais or not numero_local:
             return "Por favor, selecciona un país e ingresa tu número."
 
-        # Convertimos nombre de país a región ISO (por ejemplo: "Bolivia" => "BO")
-        nombre_paises = {region: geocoder.description_for_number(
-            phonenumbers.parse(f"+{code[0]}", region), "es"
-        ) for code, regions in COUNTRY_CODE_TO_REGION_CODE.items() for region in regions}
+        codigo_pais = PAISES_CODIGOS.get(pais)
+        if not codigo_pais:
+            return "País no soportado o inválido."
 
-        # Buscamos región ISO por nombre
-        region_code = next((code for code, name in nombre_paises.items() if name.lower() == pais.lower()), None)
+        # Construir número completo
+        numero_completo = f"{codigo_pais}{numero_local.strip()}"
 
-        if not region_code:
-            return "País no reconocido."
-
-        # Creamos el número completo
-        try:
-            numero_obj = phonenumbers.parse(numero_local, region_code)
-            numero_formateado = phonenumbers.format_number(numero_obj, PhoneNumberFormat.E164)  # Ej: +59170000000
-        except:
-            return "Número inválido para el país seleccionado."
-
-        token = serializer.dumps(numero_formateado)
+        token = serializer.dumps(numero_completo)
         return redirect(f"/votar?token={token}")
 
-    # Para el formulario: usamos la API de countriesnow.space
-    return """
+    # HTML con select dinámico
+    opciones = ''.join([f"<option value='{p}'>{p}</option>" for p in PAISES_CODIGOS.keys()])
+    return f"""
     <!DOCTYPE html>
     <html lang="es">
     <head>
@@ -342,23 +332,19 @@ def generar_link():
         <title>Iniciar Votación</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
         <style>
-            body {
+            body {{
                 background-color: #f4f6f9;
                 padding-top: 80px;
-            }
-            .card {
+            }}
+            .card {{
                 max-width: 500px;
                 margin: auto;
                 padding: 30px;
                 border-radius: 10px;
                 background: #fff;
                 box-shadow: 0 0 12px rgba(0,0,0,0.06);
-            }
+            }}
         </style>
     </head>
     <body>
@@ -368,7 +354,10 @@ def generar_link():
             <form method="POST">
                 <div class="mb-3 text-start">
                     <label class="form-label">País</label>
-                    <select id="pais" name="pais" class="form-select" required></select>
+                    <select name="pais" class="form-select" required>
+                        <option value="">Selecciona un país</option>
+                        {opciones}
+                    </select>
                 </div>
                 <div class="mb-3 text-start">
                     <label class="form-label">Número de WhatsApp (sin código)</label>
@@ -377,23 +366,24 @@ def generar_link():
                 <button type="submit" class="btn btn-primary w-100">Generar enlace</button>
             </form>
         </div>
-
-        <script>
-            async function cargarPaises() {
-                const res = await fetch("https://countriesnow.space/api/v0.1/countries");
-                const data = await res.json();
-                const selectPais = $('#pais');
-                data.data.forEach(p => selectPais.append(new Option(p.country, p.country)));
-                $('#pais').select2({ placeholder: "Selecciona un país", width: '100%' });
-            }
-
-            $(document).ready(() => {
-                cargarPaises();
-            });
-        </script>
     </body>
     </html>
     """
+
+PAISES_CODIGOS = {
+    "Bolivia": "+591",
+    "Argentina": "+54",
+    "Chile": "+56",
+    "Perú": "+51",
+    "México": "+52",
+    "Colombia": "+57",
+    "España": "+34",
+    "Estados Unidos": "+1",
+    "Paraguay": "+595",
+    "Brasil": "+55",
+    "Ecuador": "+593"
+    # Puedes agregar más si lo deseas
+}
 
 # ---------------------------
 # Ejecutar la app localmente
