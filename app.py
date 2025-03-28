@@ -361,7 +361,7 @@ def generar_link():
     </head>
     <body>
         <div class="card text-center">
-            <img src="/static/logo.png" class="logo" alt="Logo Bunker">
+            <img src="/static/img/logo.png" class="logo" alt="Logo Bunker">
             <h3><strong>¡Bienvenido a las Votaciones Primarias 2025!</strong></h3>
             <p class="text-muted">Para comenzar, selecciona tu país e ingresa tu número de WhatsApp. Recuerda que solo puedes votar una vez por número.</p>
             <form method="POST">
