@@ -116,7 +116,7 @@ def votar():
           <div class="mensaje-wrapper">
             <h3>Voto ya registrado</h3>
             <p class="mt-3 fs-5">
-              Nuestro sistema ha detectado que este número de WhatsApp ya ha emitido su voto.
+              Nuestro sistema ha detectado que este número ya ha emitido su voto.
             </p>
             <p class="text-muted">
               Agradecemos tu participación en este proceso democrático.
@@ -169,7 +169,7 @@ def votar():
           <div class="mensaje-wrapper">
             <h3>Voto ya registrado</h3>
             <p class="mt-3 fs-5">
-              Nuestro sistema ha detectado que este número de IP ya ha emitido un voto.
+              Nuestro sistema ha detectado que este número ya ha emitido su voto.
             </p>
             <p class="text-muted">
               Agradecemos tu participación en este proceso democrático.
@@ -313,21 +313,6 @@ def whatsapp_reply():
     return str(response)
 
 
-# ---------------------------
-# Eliminar voto (para pruebas)
-# ---------------------------
-@app.route('/borrar_voto')
-def borrar_voto():
-    numero = request.args.get('numero')
-    if not numero:
-        return "Falta el número. Usa /borrar_voto?numero=whatsapp:+591XXXXXXXX"
-    voto = Voto.query.filter_by(numero=numero).first()
-    if voto:
-        db.session.delete(voto)
-        db.session.commit()
-        return f"Voto del número {numero} eliminado correctamente."
-    else:
-        return "No se encontró ningún voto con ese número."
 
 # ---------------------------
 # Rutas para desarrollo
