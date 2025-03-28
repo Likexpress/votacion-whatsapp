@@ -157,9 +157,9 @@ def enviar_voto():
     anio = request.form.get('anio_nacimiento')
     lat = request.form.get('latitud')
     lon = request.form.get('longitud')
+
     x_forwarded_for = request.headers.get('X-Forwarded-For')
     ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.remote_addr
-
 
     if not numero:
         return "Error: el número de WhatsApp es obligatorio."
@@ -182,9 +182,50 @@ def enviar_voto():
         return "Ya registramos tu voto."
     if ip_es_vpn(ip):
         return "Voto denegado. No se permite votar desde una VPN o proxy."
+    
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
     if votos_misma_ip >= 1:
-        return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
+        return f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Voto ya registrado</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+          <style>
+            body {{
+              background-color: #f8f9fa;
+            }}
+            .mensaje-wrapper {{
+              max-width: 700px;
+              margin: 60px auto;
+              padding: 30px;
+              background: #fff;
+              border-radius: 8px;
+              box-shadow: 0 0 10px rgba(0,0,0,0.05);
+              text-align: center;
+            }}
+            .mensaje-wrapper h3 {{
+              color: #dc3545;
+            }}
+          </style>
+        </head>
+        <body>
+          <div class="mensaje-wrapper">
+            <h3>Voto ya registrado</h3>
+            <p class="mt-3 fs-5">
+              Nuestro sistema ha detectado que esta conexión ya ha sido utilizada para emitir un voto.
+            </p>
+            <p class="text-muted">
+              Agradecemos tu participación en este proceso democrático.
+            </p>
+            <hr>
+            <p class="text-secondary">Si crees que esto es un error, por favor contacta con el equipo organizador.</p>
+          </div>
+        </body>
+        </html>
+        """
 
     nuevo_voto = Voto(
         numero=numero,
@@ -249,6 +290,7 @@ def enviar_voto():
     </body>
     </html>
     """
+
 
 
 
