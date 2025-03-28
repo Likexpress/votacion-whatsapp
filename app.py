@@ -329,27 +329,27 @@ return """
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Iniciar Votación - Primarias Bunker</title>
+  <title>Primarias Bunker - Iniciar Votación</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <style>
     body {
       background-color: #f4f6f9;
-      padding-top: 60px;
-    }
-    .card {
-      max-width: 550px;
-      margin: auto;
-      padding: 30px;
-      border-radius: 12px;
-      background: #ffffff;
-      box-shadow: 0 0 15px rgba(0,0,0,0.06);
+      padding-top: 80px;
     }
     .logo {
-      width: 100px;
-      margin: 0 auto 20px;
-      display: block;
+      max-width: 120px;
+      margin-bottom: 20px;
+    }
+    .card {
+      max-width: 500px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 0 12px rgba(0,0,0,0.06);
+      text-align: center;
     }
     .select2-container .select2-selection--single {
       height: 38px;
@@ -357,31 +357,33 @@ return """
   </style>
 </head>
 <body>
-  <div class="card text-center">
-    <img src="/static/img/logo.png" alt="Primarias Bunker" class="logo">
-    <h3 class="mb-3">Participa en las Elecciones Primarias 2025</h3>
-    <p class="text-muted">
-      Para emitir tu voto, selecciona tu país y número de WhatsApp. Este paso nos permite generar un enlace único para garantizar que cada persona vote solo una vez.
-    </p>
+  <div class="card">
+    <img src="/static/img/logo.png" class="logo" alt="Primarias Bunker">
+    <h3 class="mb-3">¡Bienvenido a las Votaciones Primarias 2025!</h3>
+    <p class="text-muted mb-4">Para comenzar, selecciona tu país e ingresa tu número de WhatsApp. Recuerda que solo puedes votar una vez por número.</p>
+
     <form method="POST" onsubmit="return validarFormulario()">
       <div class="mb-3 text-start">
         <label for="pais" class="form-label">País</label>
         <select id="pais" class="form-select" required></select>
       </div>
+
       <div class="mb-3 text-start">
         <label for="numero" class="form-label">Número de WhatsApp</label>
         <div class="input-group">
           <span class="input-group-text" id="codigo">+000</span>
-          <input type="tel" id="numero" class="form-control" placeholder="Ej. 70000000" required>
+          <input type="tel" name="numero" id="numero" class="form-control" placeholder="70000000" required>
         </div>
-        <small class="text-muted">Ingresa tu número sin el código del país</small>
+        <small class="text-muted">Ingresa tu número sin el código del país.</small>
       </div>
-      <button type="submit" class="btn btn-primary w-100">Generar Enlace de Votación</button>
+
+      <button type="submit" class="btn btn-success w-100">Generar Enlace de Votación</button>
     </form>
-    <hr class="my-4">
-    <footer class="text-muted small">
+
+    <footer class="text-muted mt-4 small">
+      <hr>
       &copy; 2025 Primarias Bunker<br>
-      Participación ciudadana por un futuro democrático
+      <em>Participación ciudadana por un futuro democrático</em>
     </footer>
   </div>
 
@@ -406,7 +408,7 @@ return """
       const codigo = document.getElementById('codigo').textContent;
       const numero = document.getElementById('numero').value.trim();
       if (!numero.match(/^[0-9]{6,15}$/)) {
-        alert("Número inválido. Por favor, verifica el formato.");
+        alert("Número inválido. Verifica el formato.");
         return false;
       }
 
