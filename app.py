@@ -137,53 +137,7 @@ def votar():
         return "No se permite votar desde conexiones de VPN o proxy. Por favor, desactiva tu VPN."
 
     votos_misma_ip = Voto.query.filter_by(ip=ip).count()
-    if votos_misma_ip >= 1:
-        return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
-    return render_template("votar.html", numero=numero)
-
-# ---------------------------
-# Procesar el voto
-# ---------------------------
-@app.route('/enviar_voto', methods=['POST'])
-def enviar_voto():
-    numero = request.form.get('numero')
-    ci = request.form.get('ci')
-    candidato = request.form.get('candidato')
-    pais = request.form.get('pais')
-    ciudad = request.form.get('ciudad')
-    dia = request.form.get('dia_nacimiento')
-    mes = request.form.get('mes_nacimiento')
-    anio = request.form.get('anio_nacimiento')
-    lat = request.form.get('latitud')
-    lon = request.form.get('longitud')
-
-    x_forwarded_for = request.headers.get('X-Forwarded-For')
-    ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.remote_addr
-
-    if not numero:
-        return "Error: el número de WhatsApp es obligatorio."
-    if not ci:
-        return "Error: el número de carnet de identidad es obligatorio."
-    if not pais:
-        return "Error: el país es obligatorio."
-    if not ciudad:
-        return "Error: la ciudad es obligatoria."
-    if not dia:
-        return "Error: el día de nacimiento es obligatorio."
-    if not mes:
-        return "Error: el mes de nacimiento es obligatorio."
-    if not anio:
-        return "Error: el año de nacimiento es obligatorio."
-    if not candidato:
-        return "Error: debes seleccionar un candidato."
-
-    if Voto.query.filter_by(numero=numero).first():
-        return "Ya registramos tu voto."
-    if ip_es_vpn(ip):
-        return "Voto denegado. No se permite votar desde una VPN o proxy."
-    
-    votos_misma_ip = Voto.query.filter_by(ip=ip).count()
     if votos_misma_ip >= 1:
         return f"""
         <!DOCTYPE html>
@@ -215,7 +169,7 @@ def enviar_voto():
           <div class="mensaje-wrapper">
             <h3>Voto ya registrado</h3>
             <p class="mt-3 fs-5">
-              Nuestro sistema ha detectado que esta conexión ya ha sido utilizada para emitir un voto.
+              Nuestro sistema ha detectado que este número de IP ya ha emitido un voto.
             </p>
             <p class="text-muted">
               Agradecemos tu participación en este proceso democrático.
@@ -226,6 +180,53 @@ def enviar_voto():
         </body>
         </html>
         """
+
+
+    return render_template("votar.html", numero=numero)
+
+# ---------------------------
+# Procesar el voto
+# ---------------------------
+@app.route('/enviar_voto', methods=['POST'])
+def enviar_voto():
+    numero = request.form.get('numero')
+    ci = request.form.get('ci')
+    candidato = request.form.get('candidato')
+    pais = request.form.get('pais')
+    ciudad = request.form.get('ciudad')
+    dia = request.form.get('dia_nacimiento')
+    mes = request.form.get('mes_nacimiento')
+    anio = request.form.get('anio_nacimiento')
+    lat = request.form.get('latitud')
+    lon = request.form.get('longitud')
+    x_forwarded_for = request.headers.get('X-Forwarded-For')
+    ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.remote_addr
+
+
+    if not numero:
+        return "Error: el número de WhatsApp es obligatorio."
+    if not ci:
+        return "Error: el número de carnet de identidad es obligatorio."
+    if not pais:
+        return "Error: el país es obligatorio."
+    if not ciudad:
+        return "Error: la ciudad es obligatoria."
+    if not dia:
+        return "Error: el día de nacimiento es obligatorio."
+    if not mes:
+        return "Error: el mes de nacimiento es obligatorio."
+    if not anio:
+        return "Error: el año de nacimiento es obligatorio."
+    if not candidato:
+        return "Error: debes seleccionar un candidato."
+
+    if Voto.query.filter_by(numero=numero).first():
+        return "Ya registramos tu voto."
+    if ip_es_vpn(ip):
+        return "Voto denegado. No se permite votar desde una VPN o proxy."
+    votos_misma_ip = Voto.query.filter_by(ip=ip).count()
+    if votos_misma_ip >= 1:
+        return "Se ha alcanzado el límite de votos permitidos desde esta conexión."
 
     nuevo_voto = Voto(
         numero=numero,
@@ -290,7 +291,6 @@ def enviar_voto():
     </body>
     </html>
     """
-
 
 
 
