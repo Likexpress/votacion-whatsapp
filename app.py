@@ -150,28 +150,37 @@ def generar_link():
         if not pais or not numero_local:
             return "Por favor, selecciona un país e ingresa tu número."
 
-        # Convertimos nombre de país a región ISO (por ejemplo: "Bolivia" => "BO")
-        nombre_paises = {region: geocoder.description_for_number(
-            phonenumbers.parse(f"+{code[0]}", region), "es"
-        ) for code, regions in COUNTRY_CODE_TO_REGION_CODE.items() for region in regions}
-
-        # Buscamos región ISO por nombre
-        region_code = next((code for code, name in nombre_paises.items() if name.lower() == pais.lower()), None)
-
-        if not region_code:
-            return "País no reconocido."
-
-        # Creamos el número completo
         try:
-            numero_obj = phonenumbers.parse(numero_local, region_code)
-            numero_formateado = phonenumbers.format_number(numero_obj, PhoneNumberFormat.E164)  # Ej: +59170000000
-        except:
-            return "Número inválido para el país seleccionado."
+            # Consultamos la API para obtener el código del país
+            url = "https://countriesnow.space/api/v0.1/countries/codes"
+            res = requests.get(url)
+            data = res.json()
 
+            match = next((c for c in data["data"] if c["name"].lower() == pais.lower()), None)
+            if not match:
+                return "País no reconocido."
+
+            codigo = match["dial_code"].replace("+", "")  # Ejemplo: "591"
+
+            # Formamos número internacional
+            numero_completo = f"+{codigo}{numero_local}"
+
+            # Verificamos si es un número válido
+            numero_obj = phonenumbers.parse(numero_completo, None)
+            if not phonenumbers.is_valid_number(numero_obj):
+                return "Número de WhatsApp inválido para el país seleccionado."
+
+            # Formato E164 estandarizado
+            numero_formateado = phonenumbers.format_number(numero_obj, PhoneNumberFormat.E164)
+
+        except Exception as e:
+            return f"Ocurrió un error procesando el número: {str(e)}"
+
+        # Generamos token seguro
         token = serializer.dumps(numero_formateado)
         return redirect(f"/votar?token={token}")
 
-    # Para el formulario: usamos la API de countriesnow.space
+    # Página de formulario GET
     return """
     <!DOCTYPE html>
     <html lang="es">
@@ -183,7 +192,6 @@ def generar_link():
         <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
         <style>
             body {
                 background-color: #f4f6f9;
@@ -232,6 +240,7 @@ def generar_link():
     </body>
     </html>
     """
+
 
 
 
