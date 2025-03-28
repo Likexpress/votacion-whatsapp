@@ -1,10 +1,14 @@
 from flask import Flask, request, render_template, redirect
-from twilio.twiml.messaging_response import MessagingResponse
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeSerializer, BadSignature
 import os
 import requests
+import phonenumbers
+from phonenumbers import geocoder, carrier, PhoneNumberFormat, region_code_for_country_code, COUNTRY_CODE_TO_REGION_CODE
+
+
+
 # COdigo Funcional
 # ---------------------------
 # Inicialización de la aplicación Flask
@@ -139,16 +143,34 @@ def votar():
 @app.route('/generar_link', methods=['GET', 'POST'])
 def generar_link():
     if request.method == 'POST':
-        numero = request.form.get('numero')
-        if not numero:
-            return "Por favor, ingresa tu número de WhatsApp."
-        
-        if not numero.startswith('+'):
-            return "El número debe tener el formato internacional, por ejemplo: +59170000000"
+        pais = request.form.get('pais')
+        numero_local = request.form.get('numero_local')
 
-        token = serializer.dumps(numero)
+        if not pais or not numero_local:
+            return "Por favor, selecciona un país e ingresa tu número."
+
+        # Convertimos nombre de país a región ISO (por ejemplo: "Bolivia" => "BO")
+        nombre_paises = {region: geocoder.description_for_number(
+            phonenumbers.parse(f"+{code[0]}", region), "es"
+        ) for code, regions in COUNTRY_CODE_TO_REGION_CODE.items() for region in regions}
+
+        # Buscamos región ISO por nombre
+        region_code = next((code for code, name in nombre_paises.items() if name.lower() == pais.lower()), None)
+
+        if not region_code:
+            return "País no reconocido."
+
+        # Creamos el número completo
+        try:
+            numero_obj = phonenumbers.parse(numero_local, region_code)
+            numero_formateado = phonenumbers.format_number(numero_obj, PhoneNumberFormat.E164)  # Ej: +59170000000
+        except:
+            return "Número inválido para el país seleccionado."
+
+        token = serializer.dumps(numero_formateado)
         return redirect(f"/votar?token={token}")
 
+    # Para el formulario: usamos la API de countriesnow.space
     return """
     <!DOCTYPE html>
     <html lang="es">
@@ -157,9 +179,13 @@ def generar_link():
         <title>Iniciar Votación</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
         <style>
             body {
-                background-color: #f8f9fa;
+                background-color: #f4f6f9;
                 padding-top: 80px;
             }
             .card {
@@ -175,12 +201,33 @@ def generar_link():
     <body>
         <div class="card text-center">
             <h3>Inicio de votación</h3>
-            <p class="text-muted">Ingresa tu número de WhatsApp para obtener tu enlace único de votación.</p>
+            <p class="text-muted">Selecciona tu país e ingresa tu número local:</p>
             <form method="POST">
-                <input type="text" name="numero" class="form-control mb-3" placeholder="+59170000000" required>
+                <div class="mb-3 text-start">
+                    <label class="form-label">País</label>
+                    <select id="pais" name="pais" class="form-select" required></select>
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label">Número de WhatsApp (sin código)</label>
+                    <input type="tel" name="numero_local" class="form-control" placeholder="Ej: 70000000" required>
+                </div>
                 <button type="submit" class="btn btn-primary w-100">Generar enlace</button>
             </form>
         </div>
+
+        <script>
+            async function cargarPaises() {
+                const res = await fetch("https://countriesnow.space/api/v0.1/countries");
+                const data = await res.json();
+                const selectPais = $('#pais');
+                data.data.forEach(p => selectPais.append(new Option(p.country, p.country)));
+                $('#pais').select2({ placeholder: "Selecciona un país", width: '100%' });
+            }
+
+            $(document).ready(() => {
+                cargarPaises();
+            });
+        </script>
     </body>
     </html>
     """
@@ -293,25 +340,6 @@ def enviar_voto():
     </html>
     """
 
-
-
-# ---------------------------
-# Enviar mensaje con link cifrado vía WhatsApp
-# ---------------------------
-@app.route('/whatsapp', methods=['POST'])
-def whatsapp_reply():
-    sender = request.values.get('From', '')
-    numero = sender.replace("whatsapp:", "").strip()
-
-    token = serializer.dumps(numero)
-    link_votacion = f"https://primariasbunker.org/votar?token={token}"
-
-    response = MessagingResponse()
-    msg = response.message()
-    msg.body(f"Hola, gracias por ser parte de este proceso democrático.\n\n"
-             f"Haz clic en el siguiente enlace para emitir tu voto en las Votaciones Primarias Bolivia 2025:\n"
-             f"{link_votacion}")
-    return str(response)
 
 
 # ---------------------------
